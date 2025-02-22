@@ -1,7 +1,26 @@
+import React, {useState, useEffect} from "react";
+
 const Home = () => {
+    const [data, setData] = useState([{}])
+    useEffect(() => {
+        fetch("http://127.0.0.1:5000/members").then(
+            res => res.json()
+        ).then(
+            data => {
+                setData(data)
+                console.log(data)
+            }
+        )
+    }, [])
     return (
         <div>
-            Home page. You don't really need to put anything here. Feel free to fill it with memes or something, idk.
+            {(typeof data.members === 'undefined') ? (
+            <p>Loading...</p>
+            ) : (
+                data.members.map((member, i) => (
+                    <p key={i}>{member}</p>
+                ))
+            )}
         </div>
     )
 };
