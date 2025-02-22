@@ -1,18 +1,46 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import "./Login.css"; // Import our custom CSS
+import { GlobalContext } from '../contexts/GlobalContext'; // Adjust path as needed
+import { useNavigate } from 'react-router-dom';
+
 
 // We define the Login component
 const Login = () => {
   // We use React state to store form values
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const { setUser } = useContext(GlobalContext);
+  const navigate = useNavigate();
 
   // This function handles the form submission
-  const handleSubmit = (e) => {
-    e.preventDefault(); // Prevent page reload
-    console.log("Login submitted with:", { username, password });
-    // Here you can add your authentication logic
-  };
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const formData = { username, password };
+    try {
+    const response = await fetch('http://127.0.0.1:5000/login', {
+        method: 'POST',
+        headers: {
+        'Content-Type': 'application/json',
+        },
+        
+        body: JSON.stringify(formData),
+    });
+
+    if (response.ok) {
+        const data = await response.json();
+        console.log(data)
+        setUser(data);
+        navigate('/');
+    } else {
+        const error = await response.json();
+        console.log(error)
+        alert(error.message || 'Login failed.');
+    }
+    } catch (err) {
+      console.log(err)
+    alert('Login failed');
+    }
+};
 
   return (
     <div className="login-container">
