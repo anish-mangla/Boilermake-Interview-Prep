@@ -4,7 +4,7 @@ import Navbar from './Navbar';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
-import ResumeUpload from './pages/ResumeUpload';
+import ResumeUpload from './pages/Resume_upload';
 import './App.css';
 
 function App() {
