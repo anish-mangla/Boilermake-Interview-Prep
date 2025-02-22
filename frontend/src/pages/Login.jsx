@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import "./Login.css"; // Import our custom CSS
-import logo from "../assets/logo.png"; // Import the logo from assets
 
 // We define the Login component
 const Login = () => {
@@ -17,17 +16,6 @@ const Login = () => {
 
   return (
     <div className="login-container">
-      {/* Logo section */}
-      <div className="login-logo">
-        {/* Replace src with your actual logo path or an imported image */}
-        <img
-          src={logo}
-          alt="Interview Prep Logo"
-          className="logo-img"
-        />
-        
-      </div>
-
       {/* Title */}
       <h1 className="login-title">Sign in to Interview Prep</h1>
 
