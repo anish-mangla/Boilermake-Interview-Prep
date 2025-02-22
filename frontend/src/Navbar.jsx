@@ -1,7 +1,9 @@
-import React from "react";
+import React, { useState, useContext } from "react";
 import { Link } from "react-router-dom";
 import "./Navbar.css";
 import logo from "./assets/logo.png";
+import { GlobalContext } from '../contexts/GlobalContext'; // Adjust path as needed
+import { useNavigate } from 'react-router-dom';
 
 // Uncomment and adjust this if you have a logo file 
 // import logo from "../assets/logo.png";
