@@ -1,20 +1,27 @@
+import React from "react";
 import { Link } from "react-router-dom";
-import './Navbar.css';
+import "./Navbar.css";
+
 
 const Navbar = () => {
-    return (
-        <div id="navbar-container">
-            <div id="navbar-title">
-                CS390 HW5
-            </div>
+  return (
+    // Using a semantic <nav> for the navbar container
+    <nav className="navbar-container">
 
-            <div id="navbar-links">
-                <Link to="/">Home</Link>
-                <Link to="/login">Login</Link>
-                <Link to="/signup">Signup</Link>
-            </div>
-        </div>
-    )
+      {/* Link section */}
+      <div className="navbar-links">
+        <Link to="/" className="nav-link">
+          Home
+        </Link>
+        <Link to="/login" className="nav-link">
+          Login
+        </Link>
+        <Link to="/signup" className="nav-link">
+          Signup
+        </Link>
+      </div>
+    </nav>
+  );
 };
 
 export default Navbar;

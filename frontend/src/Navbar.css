@@ -1,11 +1,33 @@
-#navbar-container {
-    display: flex;
-    justify-content: space-between;
-    padding: 16px;
-    box-sizing: border-box;
-}
+/* 
+  Navbar.css 
+  A dark-themed navbar that matches your Login and Signup pages
+*/
 
-#navbar-links {
+/* The main navbar container */
+.navbar-container {
+    width: 100%;
+    padding: 1rem 2rem;
     display: flex;
-    gap: 8px;
-}
+    align-items: center;
+    justify-content: space-between;
+    background-color: #2c2352; /* Purple/dark color for the navbar */
+    color: #ffffff;
+  }
+  
+  /* The container holding the link items */
+  .navbar-links {
+    display: flex;
+    gap: 1rem; /* Space between links */
+  }
+  
+  /* Navbar link styles */
+  .nav-link {
+    color: #ffffff;
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+  
+  .nav-link:hover {
+    color: #b8a3ff; /* Subtle purple hover color */
+  }
+  
