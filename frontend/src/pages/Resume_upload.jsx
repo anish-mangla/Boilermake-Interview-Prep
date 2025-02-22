@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import "./ResumeUpload.css"; // Import custom CSS
 import { useNavigate } from "react-router-dom";
 
 const ResumeUpload = () => {

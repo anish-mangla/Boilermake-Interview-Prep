@@ -1,45 +1,46 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from pymongo import MongoClient
-import os
-from dotenv import load_dotenv
+import gridfs
 
 app = Flask(__name__)
 CORS(app)
 
 # Connect to MongoDB using pymongo
-mongo_uri = "mongodb+srv://pranaynandkeolyar:boilermake@boilermake.7cwex.mongodb.net/?retryWrites=true&w=majority&appName=Boilermake"
+mongo_uri = (
+    "mongodb+srv://pranaynandkeolyar:"
+    "boilermake@boilermake.7cwex.mongodb."
+    "net/?retryWrites=true&w=majority&appName=Boilermake"
+)
 
 client = MongoClient(mongo_uri)
-db = client['users']
+db = client["users"]
 collection = db["users"]
+fs = gridfs.GridFS(db)  # GridFS for storing files
 
-
-
-@app.route('/login', methods=['POST'])
+@app.route("/login", methods=["POST"])
 def login_handler():
     try:
-        # Extract email and password from the request
         data = request.get_json()
-        email = data.get('username')
-        password = data.get('password')
-        print(email)
-        print(password)
-        # Validate input
+        email = data.get("username")
+        password = data.get("password")
+
+        print("LOGIN:", email, password)
+
         if not email or not password:
             return jsonify({"message": "Email and password are required."}), 400
 
-        # Find user in the database
         user = collection.find_one({"email": email})
-
         if not user:
             return jsonify({"message": "Incorrect username. User does not exist"}), 401
-        # Check password
+
         if user["password"] != password:
             return jsonify({"message": "Incorrect password."}), 401
 
-        # Successful login
-        user["_id"] = str(user["_id"])  # Convert ObjectId to string for JSON serialization
+        # Convert ObjectId to string and ensure resume_id exists
+        user["_id"] = str(user["_id"])
+        user["resume_id"] = str(user.get("resume_id", ""))  # Default to empty if not present
+
         return jsonify(user), 200
 
     except Exception as e:
@@ -47,73 +48,65 @@ def login_handler():
         return jsonify({"message": "Internal server error."}), 500
 
 
-@app.route('/signup', methods=['POST'])
+@app.route("/signup", methods=["POST"])
 def signup_handler():
+
     try:
-        # Parse request data
-        data = request.json
-        email = data.get('username')
-        password = data.get('password')
+        email = request.form.get("username")
+        password = request.form.get("password")
+        resume = request.files.get("file")
 
-        # Validate input
-        if not email or not password:
-            return jsonify({"message": "Email and password are required."}), 400
+        print(
+            "SIGNUP:",
+            f"Email={email}",
+            f"Password={'*' * len(password) if password else ''}",
+            f"Resume={resume.filename if resume else 'NO FILE'}",
+        )
 
-        # Check if user already exists
+        if not email or not password or not resume:
+            return jsonify({"message": "Username, password, and resume are required."}), 400
+
         existing_user = collection.find_one({"email": email})
         if existing_user:
+            # If user exists but doesn't have a resume, update them
+            if "resume_id" not in existing_user:
+                resume_id = fs.put(resume, filename=resume.filename, content_type=resume.content_type)
+                collection.update_one(
+                    {"email": email},
+                    {"$set": {"resume_id": resume_id}}
+                )
+                return jsonify({"message": "Resume uploaded successfully for existing user.", "resume_id": str(resume_id)}), 200
             return jsonify({"message": "User already exists."}), 409
 
-        # Insert new user
-        new_user = {"email": email, "password": password}
-        insert_result = collection.insert_one(new_user)
+        # Store resume in GridFS
+        resume_id = fs.put(resume, filename=resume.filename, content_type=resume.content_type)
 
+        # Insert new user record
+        new_user = {
+            "email": email,
+            "password": password,
+            "resume_id": resume_id,
+        }
+        insert_result = collection.insert_one(new_user)
         if not insert_result.acknowledged:
             return jsonify({"message": "User creation failed."}), 500
 
-        # Fetch and return the new user
-        user = collection.find_one({"_id": insert_result.inserted_id})
-        if not user:
-            return jsonify({"message": "Error retrieving user."}), 500
-
-        # Success - Return created user
-        return jsonify({
-            "id": str(user["_id"]),
-            "email": user["email"]
-        }), 201
+        return jsonify(
+            {
+                "id": str(insert_result.inserted_id),
+                "email": email,
+                "resume_id": str(resume_id),
+            }
+        ), 201
 
     except Exception as e:
         print(f"Error: {e}")
-        return jsonify({"message": "Internal Server Error."}), 500
+        return jsonify({"message": f"Internal Server Error: {e}"}), 500
 
-
-
-@app.route('/add_member', methods=["GET", "POST"])  # Ensure POST is allowed
-def add_member():
-    # Get the JSON data from the request
-    data = request.get_json()
-    print(data)
-    # Make sure the data includes a 'name' field
-    if 'name' not in data:
-        return jsonify(message="Error: 'name' is required"), 400
-
-    # Insert the new member into the 'members' collection
-    members_collection = db.members
-    member = {"name": data["name"]}
-    members_collection.insert_one(member)
-    member["_id"] = str(member["_id"])  # Convert ObjectId to string
-    return jsonify(message="Member added successfully!", member=member), 201
-
-# Fetch members from MongoDB
-@app.route("/members")
-def members():
-    members_collection = db.members
-    members = [member["name"] for member in members_collection.find()]
-    return jsonify({"members": members})
 
 if __name__ == "__main__":
     try:
-        client.admin.command('ping')  # Check MongoDB connection
+        client.admin.command("ping")
         print("✅ Connected to MongoDB successfully!")
     except Exception as e:
         print("❌ MongoDB connection error:", e)

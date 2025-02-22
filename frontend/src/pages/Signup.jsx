@@ -1,85 +1,108 @@
 import React, { useState, useContext } from "react";
-import { GlobalContext } from '../contexts/GlobalContext'; // Adjust path as needed
-import { useNavigate } from 'react-router-dom';
+import "./Signup.css"; // Import custom CSS if you have it
+import { GlobalContext } from "../contexts/GlobalContext";
+import { useNavigate } from "react-router-dom";
 
 const Signup = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [file, setFile] = useState(null);
+
   const { setUser } = useContext(GlobalContext);
   const navigate = useNavigate();
 
+  const handleFileChange = (e) => {
+    setFile(e.target.files[0]);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!file) {
+      alert("Please upload your resume (PDF) before signing up.");
+      return;
+    }
     if (password !== confirmPassword) {
       alert("Passwords do not match.");
       return;
     }
-  
-    const formData = { username, password };
-  
+
+    const formData = new FormData();
+    formData.append("username", username);
+    formData.append("password", password);
+    formData.append("file", file);
+
     try {
-      const response = await fetch('http://127.0.0.1:5000/signup', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
+      const response = await fetch("http://127.0.0.1:5000/signup", {
+        method: "POST",
+        body: formData, // Do NOT set Content-Type, fetch will do it automatically
       });
 
+      const data = await response.json();
       if (response.ok) {
-        const data = await response.json();
         setUser(data);
-        navigate('/resume-upload'); // Redirect to Resume Upload page
-      } else if (response.status === 409) {
-        alert("User already exists.");
+        alert("Signup successful!");
+        navigate("/");
       } else {
-        const error = await response.json();
-        alert(error.message || 'Signup failed.');
+        alert(data.message || "Signup failed.");
       }
     } catch (err) {
-      alert(err.message || 'An unexpected error occurred during signup.');
+      alert("An unexpected error occurred during signup.");
     }
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-6">
-      <h1 className="text-3xl font-bold text-gray-800 mb-6">Sign up to Interview Prep</h1>
-      <form className="w-full max-w-md bg-white p-6 rounded-lg shadow-md" onSubmit={handleSubmit}>
-        <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">Username</label>
+    <div className="signup-container">
+      <h1 className="signup-title">Sign up to Interview Prep</h1>
+      <form className="signup-form" onSubmit={handleSubmit}>
+        <label htmlFor="username" className="signup-label">
+          Username
+        </label>
         <input
           id="username"
           type="text"
-          className="block w-full text-sm text-gray-500 border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring focus:border-blue-300"
+          className="signup-input"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           placeholder="Enter your username"
         />
 
-        <label htmlFor="password" className="block text-sm font-medium text-gray-700 mt-4 mb-2">Password</label>
+        <label htmlFor="password" className="signup-label">
+          Password
+        </label>
         <input
           id="password"
           type="password"
-          className="block w-full text-sm text-gray-500 border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring focus:border-blue-300"
+          className="signup-input"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder="Enter your password"
         />
 
-        <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mt-4 mb-2">Confirm Password</label>
+        <label htmlFor="confirmPassword" className="signup-label">
+          Confirm Password
+        </label>
         <input
           id="confirmPassword"
           type="password"
-          className="block w-full text-sm text-gray-500 border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring focus:border-blue-300"
+          className="signup-input"
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
           placeholder="Re-enter your password"
         />
 
-        <button
-          type="submit"
-          className="w-full mt-4 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
-        >
+        <label htmlFor="resume" className="signup-label">
+          Upload Resume (PDF only)
+        </label>
+        <input
+          id="resume"
+          type="file"
+          accept=".pdf"
+          className="signup-input"
+          onChange={handleFileChange}
+        />
+
+        <button type="submit" className="signup-button">
           Sign Up
         </button>
       </form>
