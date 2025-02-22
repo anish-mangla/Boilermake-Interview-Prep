@@ -37,7 +37,7 @@ const Signup = () => {
         console.log("ok")
         const data = await response.json();
         setUser(data);
-        navigate('/');
+        navigate('/dashboard');
     }
     else {
         const error = await response.json();
