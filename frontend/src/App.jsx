@@ -4,6 +4,7 @@ import Navbar from './Navbar';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import ResumeUpload from './pages/ResumeUpload';
 import './App.css';
 
 function App() {
@@ -20,6 +21,7 @@ function App() {
           <Route path="/" element={<Home/>}/>
           <Route path="/login" element={<Login/>}/>
           <Route path="/signup" element={<Signup/>}/>
+          <Route path="/resume-upload" element={<ResumeUpload/>}/> {/* Added this line */}
         </Routes>
 
       </BrowserRouter>
