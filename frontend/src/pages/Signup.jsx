@@ -1,61 +1,60 @@
 import React, { useState, useContext } from "react";
-import "./Signup.css"; // Import our custom CSS
-import { GlobalContext } from '../contexts/GlobalContext'; // Adjust path as needed
-import { useNavigate } from 'react-router-dom';
+import "./Signup.css"; // Import custom CSS if you have it
+import { GlobalContext } from "../contexts/GlobalContext";
+import { useNavigate } from "react-router-dom";
 
-
-// We define the Signup component
 const Signup = () => {
-  // We store the signup fields in state
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [file, setFile] = useState(null);
+
   const { setUser } = useContext(GlobalContext);
   const navigate = useNavigate();
 
+  const handleFileChange = (e) => {
+    setFile(e.target.files[0]);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!file) {
+      alert("Please upload your resume (PDF) before signing up.");
+      return;
+    }
     if (password !== confirmPassword) {
       alert("Passwords do not match.");
-      return; // Stop the function if passwords don't match
+      return;
     }
-  
-    // Create the formData object
-    const formData = { username, password };
-  
+
+    const formData = new FormData();
+    formData.append("username", username);
+    formData.append("password", password);
+    formData.append("file", file);
+
     try {
-    const response = await fetch('http://127.0.0.1:5000/signup', {
-        method: 'POST',
-        headers: {
-        'Content-Type': 'application/json',
-        },
-        
-        body: JSON.stringify(formData),
-    });
-    console.log(response)
-    if (response.ok) {
-        console.log("ok")
-        const data = await response.json();
+      const response = await fetch("http://127.0.0.1:5000/signup", {
+        method: "POST",
+        body: formData, // Do NOT set Content-Type, fetch will do it automatically
+      });
+
+      const data = await response.json();
+      if (response.ok) {
         setUser(data);
-        navigate('/');
-    }
-    else {
-        const error = await response.json();
-        alert(error.message || 'Signup failed.');
-    }
+        alert("Signup successful!");
+        navigate('/dashboard');
+      } else {
+        alert(data.message || "Signup failed.");
+      }
     } catch (err) {
-        alert(err.message || 'An unexpected error occurred during signup.');
+      alert("An unexpected error occurred during signup.");
     }
-};
+  };
 
   return (
     <div className="signup-container">
-      {/* Title */}
       <h1 className="signup-title">Sign up to Interview Prep</h1>
-
-      {/* Form */}
       <form className="signup-form" onSubmit={handleSubmit}>
-        {/* Username field */}
         <label htmlFor="username" className="signup-label">
           Username
         </label>
@@ -68,7 +67,6 @@ const Signup = () => {
           placeholder="Enter your username"
         />
 
-        {/* Password field */}
         <label htmlFor="password" className="signup-label">
           Password
         </label>
@@ -81,7 +79,6 @@ const Signup = () => {
           placeholder="Enter your password"
         />
 
-        {/* Confirm Password field */}
         <label htmlFor="confirmPassword" className="signup-label">
           Confirm Password
         </label>
@@ -94,7 +91,17 @@ const Signup = () => {
           placeholder="Re-enter your password"
         />
 
-        {/* Sign Up button */}
+        <label htmlFor="resume" className="signup-label">
+          Upload Resume (PDF only)
+        </label>
+        <input
+          id="resume"
+          type="file"
+          accept=".pdf"
+          className="signup-input"
+          onChange={handleFileChange}
+        />
+
         <button type="submit" className="signup-button">
           Sign Up
         </button>

@@ -1,0 +1,76 @@
+/* 
+  Dashboard.css
+  Basic styles for a clean, modern dashboard layout.
+*/
+
+/* Container for the entire dashboard */
+.dashboard-container {
+    /* Give some spacing from the top (especially if you have a fixed navbar) */
+    padding-top: 6rem;
+    /* Center content horizontally */
+    text-align: center;
+    /* You can set a background if desired, e.g. #0d0d2b for a dark theme */
+    background-color: #0d0d2b;
+    min-height: 100vh;
+    color: #ffffff;
+    /* Additional spacing around the sides */
+    padding-left: 2rem;
+    padding-right: 2rem;
+    box-sizing: border-box;
+  }
+  
+  /* Main heading that no longer looks like a button */
+  .dashboard-heading {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+    font-weight: 600;
+  }
+  
+  /* Subheading / prompt */
+  .dashboard-subheading {
+    font-size: 1.2rem;
+    margin-bottom: 2rem;
+    font-weight: 400;
+  }
+  
+  /* Container for the action cards */
+  .dashboard-actions {
+    display: flex;
+    flex-wrap: wrap; /* Allows wrapping on smaller screens */
+    justify-content: center;
+    gap: 1.5rem; /* Spacing between cards */
+    margin-bottom: 2rem;
+  }
+  
+  /* Individual action card */
+  .dashboard-action-card {
+    background-color: #2c2352; /* A purple/dark color for each card */
+    padding: 1.5rem;
+    width: 220px; /* Adjust as needed */
+    border-radius: 0.5rem;
+    transition: transform 0.2s ease, background-color 0.2s ease;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center; 
+  }
+  
+  /* Hover effect for each card */
+  .dashboard-action-card:hover {
+    transform: translateY(-5px);
+    background-color: #3a2f60; /* Slightly lighter/different shade on hover */
+  }
+  
+  /* Icon inside the card */
+  .action-icon {
+    font-size: 2rem; /* Make the icon bigger */
+    margin-bottom: 0.5rem;
+  }
+  
+  /* Text inside the card (e.g., "Upload & Analyze Resume") */
+  .dashboard-action-card p {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 500;
+  }
+  
