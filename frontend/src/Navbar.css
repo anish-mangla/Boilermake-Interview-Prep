@@ -52,7 +52,7 @@
 /* NAV LINKS SECTION */
 .navbar-links {
   display: flex;
-  gap: 1rem; /* Space between links */
+  gap: 2.5rem; /* Space between links */
 }
 
 /* Navbar link styles */
