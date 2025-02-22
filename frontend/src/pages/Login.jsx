@@ -30,7 +30,7 @@ const Login = () => {
         const data = await response.json();
         console.log(data)
         setUser(data);
-        navigate('/');
+        navigate('/dashboard');
     } else {
         const error = await response.json();
         console.log(error)

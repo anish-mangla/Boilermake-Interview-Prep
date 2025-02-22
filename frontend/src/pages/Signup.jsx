@@ -42,7 +42,7 @@ const Signup = () => {
       if (response.ok) {
         setUser(data);
         alert("Signup successful!");
-        navigate("/");
+        navigate('/dashboard');
       } else {
         alert(data.message || "Signup failed.");
       }
