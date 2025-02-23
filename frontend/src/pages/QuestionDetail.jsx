@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import "./QuestionDetail.css";
 
 const questions = [
@@ -26,6 +26,7 @@ const questions = [
 ];
 
 const QuestionDetail = () => {
+  const navigate = useNavigate();
   const { questionIndex } = useParams();
   const question = questions[questionIndex] || "Unknown Question";
 
@@ -40,6 +41,7 @@ const QuestionDetail = () => {
   const videoRef = useRef(null);
   const playbackRef = useRef(null);
 
+  // ============= Set up webcam stream =============
   useEffect(() => {
     const initStream = async () => {
       try {
@@ -57,10 +59,10 @@ const QuestionDetail = () => {
         console.error("Error accessing camera or microphone", error);
       }
     };
-
     initStream();
 
     return () => {
+      // Cleanup on unmount
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((track) => track.stop());
         streamRef.current = null;
@@ -69,9 +71,9 @@ const QuestionDetail = () => {
     };
   }, []);
 
+  // ============= Record / Pause / Finish =============
   const handleRecord = () => {
     if (!stream) return;
-
     const recorder = new MediaRecorder(stream);
     setMediaRecorder(recorder);
     setRecordedChunks([]);
@@ -100,14 +102,12 @@ const QuestionDetail = () => {
 
   const handleFinish = () => {
     if (!mediaRecorder) return;
-
     mediaRecorder.stop();
     setRecordingState("finished");
 
+    // Stop camera so it doesn't keep streaming
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => {
-        track.stop();
-      });
+      streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
       setStream(null);
     }
@@ -117,11 +117,7 @@ const QuestionDetail = () => {
     setRecordedChunks([]);
     setRecordingState("idle");
 
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop());
-      streamRef.current = null;
-    }
-
+    // Re-init camera
     const initStream = async () => {
       try {
         const userStream = await navigator.mediaDevices.getUserMedia({
@@ -138,10 +134,10 @@ const QuestionDetail = () => {
         console.error("Error accessing camera or microphone", error);
       }
     };
-
     initStream();
   };
 
+  // ============= Grade =============
   const handleGrade = async () => {
     if (recordedChunks.length === 0) return;
 
@@ -149,21 +145,41 @@ const QuestionDetail = () => {
     const formData = new FormData();
     formData.append("video", blob);
     formData.append("question", question);
+    formData.append("index", questionIndex);  // <--- Send the questionIndex to server
 
     try {
       const response = await fetch("http://127.0.0.1:5000/grade", {
         method: "POST",
         body: formData,
       });
-
       const data = await response.json();
-      alert(`Grade received: ${data.grade}`);
+
+      // data will look like: 
+      // {
+      //   index: "3",
+      //   question: "Where do you see yourself in 5 years?",
+      //   transcript: "...",
+      //   feedback: {
+      //       raw_feedback: "...",
+      //       structured_feedback: {
+      //         descriptions: {
+      //           Communication: { score: 8, description: "..." },
+      //           ...
+      //         },
+      //         total_score: 35
+      //       }
+      //   }
+      // }
+
+      // Navigate to a new page that displays the feedback
+      navigate("/feedback", { state: { feedbackData: data } });
     } catch (error) {
       console.error("Error submitting video for grading", error);
       alert("Failed to submit video for grading.");
     }
   };
 
+  // ============= Render =============
   return (
     <div className="question-detail-container">
       <h2 className="question-heading">{question}</h2>
@@ -184,7 +200,9 @@ const QuestionDetail = () => {
       </div>
 
       <div className="controls-container">
-        {recordingState === "idle" && <button onClick={handleRecord}>Record</button>}
+        {recordingState === "idle" && (
+          <button onClick={handleRecord}>Record</button>
+        )}
 
         {recordingState === "recording" && (
           <>

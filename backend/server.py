@@ -1,4 +1,5 @@
 
+import fitz
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from pymongo import MongoClient
@@ -7,8 +8,9 @@ import os
 from bson import ObjectId
 
 from dotenv import load_dotenv
+import openai
 load_dotenv()
-OPEN_AI_API_KEY = os.getenv("OPEN_AI_API_KEY")
+OPEN_AI_API_KEY = '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'
 
 app = Flask(__name__)
 CORS(app)
@@ -24,6 +26,7 @@ client = MongoClient(mongo_uri)
 db = client["users"]
 collection = db["users"]
 fs = gridfs.GridFS(db)  # ✅ GridFS for storing resumes
+
 
 import re
 
@@ -59,8 +62,7 @@ def parse_ai_feedback(feedback_text):
 
 def get_ai_feedback(question, transcript):
     """Calls OpenAI API to get structured feedback on an interview response."""
-    openai.api_key = OPEN_AI_API_KEY  # Ensure API Key is set properly
-
+    openai.api_key = os.getenv("OPENAI_API_KEY")  # Ensure API Key is set properly
     prompt = f"""
     You are an AI assistant trained to evaluate behavioral interview responses based on four key categories:
     - **Communication**
@@ -115,6 +117,28 @@ def get_ai_feedback(question, transcript):
         return {"error": "Failed to generate AI feedback"}
 
 
+# Function to generate questions using OpenAI's API 
+import openai
+import os
+
+def generate_questions(text):
+    client = openai.Client()  # Initialize the new client
+
+    prompt = f"Generate five interview questions based on this resume:\n{text}\n\nQuestions:"
+    
+    response = client.chat.completions.create(
+        model="gpt-4",
+        messages=[
+            {"role": "system", "content": "You are an AI that creates interview questions based on resumes."},
+            {"role": "user", "content": prompt}
+        ],
+        max_tokens=200
+    )
+
+    # Extract questions from response
+    questions = response.choices[0].message.content.strip().split("\n")
+    return questions[:5]  # Ensure we only take the top 5
+
 # ✅ Fetch Resume and Extract Text
 @app.route("/resume", methods=["POST"])
 def get_resume():
@@ -142,69 +166,37 @@ def get_resume():
         # ✅ Extract text from PDF
         doc = fitz.open(stream=pdf_data, filetype="pdf")
         resume_text = "\n".join([page.get_text() for page in doc])
+        questions = generate_questions(resume_text)
 
         print(f"✅ Extracted resume text for user: {user_id}")
 
         return jsonify({
-            "resume_text": resume_text,
+            "questions": questions,
             "user": {
                 "email": user["email"]
             },
-            "filename": resume_file.filename
         }), 200
 
     except Exception as e:
         print(f"❌ ERROR extracting resume: {e}")
         return jsonify({"message": "Internal Server Error"}), 500
 
-
-@app.route('/grade-mult', methods=['POST'])
-def grade_mult():
-    videos = [request.files[f'videos[{i}]'] for i in range(5)]  # Accessing files[0], files[1], etc.
-    questions = [request.form[f'questions[{i}]'] for i in range(5)]  # Accessing questions[0], questions[1], etc.
-    print(videos)
-    print(questions)
-    # Ensure the 'uploads' directory exists
-    uploads_dir = 'uploads'
-    if not os.path.exists(uploads_dir):
-        os.makedirs(uploads_dir)
-    if len(videos) != len(questions):
-        return jsonify({"error": "Mismatch between number of videos and questions"}), 400
-
-    grades = []
-    for video, question in zip(videos, questions):
-        print("Received video:", video.filename)
-        print("Question:", question)
-
-        # Save video if needed
-        video_path = os.path.join("uploads", video.filename)
-        video.save(video_path)
-
-        # Call Whisper (or another service) to get text from the video
-        # call_whisper(video_path)  # Implement your logic here
-        
-        # Call Abhi (or another service) to grade based on the video and question
-        # grade = call_abhi(question, video_path)  # Implement your logic here
-
-        # Mock grade response
-        grades.append({"question": question, "grade": "A+"})
-
-    return jsonify({"grades": grades})    
-
-
-
 @app.route('/grade', methods=['POST'])
 def grade():
-    videos = request.files.getlist('videos[]')
-
+    # Retrieve the uploaded video
+    video = request.files['video']  # Update 'videos' to 'video' to match your form data key
+    print(video)
+    # Retrieve the question from the form data
     question = request.form['question']
+    index = request.form['index']
 
+    # Print for debugging (optional)
     # print("Received video:", video.filename)
     # print("Question:", question)
 
     # Define filenames for saving the video and transcript
-    video_filename = "received_video.webm"
-    transcript_filename = "received_video.txt"
+    video_filename = "received_video" + str(index) + ".webm"
+    transcript_filename = "received_video" + str(index) + ".txt"
 
     # Save the uploaded video locally
     video.save(video_filename)
@@ -234,16 +226,28 @@ def grade():
         print("Transcript:", transcript_text)
 
         # Optional: Remove the temporary video and transcript files
-        os.remove(video_filename)
-        os.remove(transcript_filename)
+        # os.remove(video_filename)
+        # os.remove(transcript_filename)
 
         # For now, simply return the transcript. Later, you can pass it to your grading model.
-        return jsonify({"transcript": transcript_text})
+        feedback = get_ai_feedback(question, transcript_text)
+        print(feedback)
+        return jsonify({
+            "index": index,
+            "feedback": feedback,
+            "question": question,
+            "transcript": transcript_text
+        }), 200
 
     except Exception as e:
         print("Error processing video:", e)
         return jsonify({"error": "Failed to process video"}), 500
 
+    
+    # You can add further logic here to process the video, like creating a transcript or running analysis
+
+    # Return a response
+    return jsonify({"grade": "A"}) 
 
 # ✅ Login Route
 @app.route("/login", methods=["POST"])
