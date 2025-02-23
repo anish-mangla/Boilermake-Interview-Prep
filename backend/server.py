@@ -1,4 +1,5 @@
 
+import fitz
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from pymongo import MongoClient
@@ -116,6 +117,28 @@ def get_ai_feedback(question, transcript):
         return {"error": "Failed to generate AI feedback"}
 
 
+# Function to generate questions using OpenAI's API 
+import openai
+import os
+
+def generate_questions(text):
+    client = openai.Client()  # Initialize the new client
+
+    prompt = f"Generate five interview questions based on this resume:\n{text}\n\nQuestions:"
+    
+    response = client.chat.completions.create(
+        model="gpt-4",
+        messages=[
+            {"role": "system", "content": "You are an AI that creates interview questions based on resumes."},
+            {"role": "user", "content": prompt}
+        ],
+        max_tokens=200
+    )
+
+    # Extract questions from response
+    questions = response.choices[0].message.content.strip().split("\n")
+    return questions[:5]  # Ensure we only take the top 5
+
 # ✅ Fetch Resume and Extract Text
 @app.route("/resume", methods=["POST"])
 def get_resume():
@@ -143,15 +166,15 @@ def get_resume():
         # ✅ Extract text from PDF
         doc = fitz.open(stream=pdf_data, filetype="pdf")
         resume_text = "\n".join([page.get_text() for page in doc])
+        questions = generate_questions(resume_text)
 
         print(f"✅ Extracted resume text for user: {user_id}")
 
         return jsonify({
-            "resume_text": resume_text,
+            "questions": questions,
             "user": {
                 "email": user["email"]
             },
-            "filename": resume_file.filename
         }), 200
 
     except Exception as e:
@@ -351,52 +374,6 @@ def update_resume():
     except Exception as e:
         print(f"❌ RESUME UPLOAD ERROR: {e}")
         return jsonify({"message": f"Internal Server Error: {e}"}), 500
-
-
-def get_ai_feedback(question, transcript):
-    """Calls OpenAI API to get structured feedback on an interview response."""
-    prompt = f"""
-    You are an AI assistant trained to evaluate behavioral interview responses based on four key categories:
-    - **Communication**
-    - **Leadership**
-    - **Problem Solving**
-    - **Teamwork**
-
-    Given the following question and response, analyze the answer and provide structured feedback.
-
-    ### **Question:**
-    {question}
-
-    ### **Candidate Response:**
-    {transcript}
-
-    ---
-    ### **Structured Feedback:**
-    **Communication:** 
-    *[Give a score out of 10 and provide specific feedback on how well the candidate communicated their response]*
-
-    **Leadership:** 
-    *[Give a score out of 10 and analyze if the candidate showed leadership qualities and decision-making skills]*
-
-    **Problem Solving:** 
-    *[Give a score out of 10 and assess their ability to approach and resolve challenges effectively]*
-
-    **Teamwork:** 
-    *[Give a score out of 10 and comment on their ability to work collaboratively in a team environment]*
-
-    Finish by giving a final score out of 50.
-    """
-
-    response = openai.chat.completions.create(
-        
-        model="gpt-3.5-turbo",  # You can also use gpt-4 or gpt-3.5-turbo
-        messages=[{"role": "system", "content": "You are an AI expert in behavioral interview evaluation."},
-                  {"role": "user", "content": prompt}],
-        max_tokens=500
-    )
-
-    # Access the content using the correct attributes
-    return response.choices[0].message.content # Changed this line
 
 
 # ✅ Health Check Route (Optional, for debugging)
