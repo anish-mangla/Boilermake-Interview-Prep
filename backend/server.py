@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from pymongo import MongoClient
 import gridfs
+import os
 
 app = Flask(__name__)
 CORS(app)
@@ -18,23 +19,91 @@ db = client["users"]
 collection = db["users"]
 fs = gridfs.GridFS(db)  # ✅ GridFS for storing resumes
 
+@app.route('/grade-mult', methods=['POST'])
+def grade_mult():
+    videos = [request.files[f'videos[{i}]'] for i in range(5)]  # Accessing files[0], files[1], etc.
+    questions = [request.form[f'questions[{i}]'] for i in range(5)]  # Accessing questions[0], questions[1], etc.
+    print(videos)
+    print(questions)
+    # Ensure the 'uploads' directory exists
+    uploads_dir = 'uploads'
+    if not os.path.exists(uploads_dir):
+        os.makedirs(uploads_dir)
+    if len(videos) != len(questions):
+        return jsonify({"error": "Mismatch between number of videos and questions"}), 400
+
+    grades = []
+    for video, question in zip(videos, questions):
+        print("Received video:", video.filename)
+        print("Question:", question)
+
+        # Save video if needed
+        video_path = os.path.join("uploads", video.filename)
+        video.save(video_path)
+
+        # Call Whisper (or another service) to get text from the video
+        # call_whisper(video_path)  # Implement your logic here
+        
+        # Call Abhi (or another service) to grade based on the video and question
+        # grade = call_abhi(question, video_path)  # Implement your logic here
+
+        # Mock grade response
+        grades.append({"question": question, "grade": "A+"})
+
+    return jsonify({"grades": grades})    
+
+
 
 @app.route('/grade', methods=['POST'])
 def grade():
-    if 'video' not in request.files or 'question' not in request.form:
-        return jsonify({"error": "Missing video or question"}), 400
+    videos = request.files.getlist('videos[]')
 
-    video = request.files['video']
     question = request.form['question']
 
-    print("Received video:", video.filename)
-    print("Question:", question)
+    # print("Received video:", video.filename)
+    # print("Question:", question)
 
-    # Save video if needed
-    video.save("received_video.webm")
+    # Define filenames for saving the video and transcript
+    video_filename = "received_video.webm"
+    transcript_filename = "received_video.txt"
 
-    # Mock grade response
-    return jsonify({"grade": "A+"})
+    # Save the uploaded video locally
+    video.save(video_filename)
+
+    try:
+        import subprocess
+        import os
+
+        # Run the whisper command on the saved video.
+        # This assumes that calling `whisper received_video.webm --output_format txt`
+        # will generate a transcript file named "received_video.txt" in the same directory.
+        result = subprocess.run(
+            ["whisper", video_filename, "--output_format", "txt"],
+            capture_output=True,
+            text=True
+        )
+        if result.returncode != 0:
+            raise Exception(f"Whisper error: {result.stderr}")
+
+        # Read the transcript from the generated file
+        if not os.path.exists(transcript_filename):
+            raise Exception("Transcript file not found.")
+
+        with open(transcript_filename, "r", encoding="utf-8") as f:
+            transcript_text = f.read()
+
+        print("Transcript:", transcript_text)
+
+        # Optional: Remove the temporary video and transcript files
+        os.remove(video_filename)
+        os.remove(transcript_filename)
+
+        # For now, simply return the transcript. Later, you can pass it to your grading model.
+        return jsonify({"transcript": transcript_text})
+
+    except Exception as e:
+        print("Error processing video:", e)
+        return jsonify({"error": "Failed to process video"}), 500
 
 
 # ✅ Login Route

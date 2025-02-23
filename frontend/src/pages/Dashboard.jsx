@@ -19,6 +19,10 @@ const Dashboard = () => {
     const handleReviewPerformanceClick = () => {
         navigate("/review-performance");
     }
+
+    const handleMockInterviewClick = () => {
+        navigate("/personal-interview");
+    };
   return (
     <div className="dashboard-container">
       {/* Main heading (no button-like appearance) */}
@@ -47,7 +51,7 @@ const Dashboard = () => {
         </div>
 
         {/* 3. Create Personalized Mock Interview */}
-        <div className="dashboard-action-card">
+        <div className="dashboard-action-card" onClick={handleMockInterviewClick} style= {{cursor : "pointer"}}>
           {/* <FaChalkboardTeacher className="action-icon" /> */}
           <div className="action-icon">🎤</div>
           <p>Create Personalized Mock Interview</p>
