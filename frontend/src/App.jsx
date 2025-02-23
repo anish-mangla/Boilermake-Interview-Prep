@@ -7,8 +7,9 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
 import ProtectedRoute from './components/ProtectedRoute';
-
 import UploadResume from './pages/UploadResume';
+import PracticeQuestions from "./pages/PracticeQuestions";
+import QuestionDetail from "./pages/QuestionDetail";
 import './App.css';
 
 function App() {
@@ -25,6 +26,11 @@ function App() {
           <Route path="/dashboard" element={<ProtectedRoute element={<Dashboard />} />} />
           {/* NEW: Upload Resume route */}
           <Route path="/upload-resume" element={<UploadResume />} />
+          <Route path="/practice-questions" element={<PracticeQuestions />} />
+
+          {/* Notice the dynamic URL segment :questionIndex */}
+        <Route path="/practice-questions/:questionIndex" element={<QuestionDetail />} />
+
         </Routes>
       </BrowserRouter>
     </GlobalProvider>
