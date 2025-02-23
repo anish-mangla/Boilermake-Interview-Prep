@@ -1,8 +1,10 @@
+import fitz
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from pymongo import MongoClient
 import gridfs
 import os
+from bson import ObjectId
 
 app = Flask(__name__)
 CORS(app)
@@ -18,6 +20,49 @@ client = MongoClient(mongo_uri)
 db = client["users"]
 collection = db["users"]
 fs = gridfs.GridFS(db)  # ✅ GridFS for storing resumes
+
+# ✅ Fetch Resume and Extract Text
+@app.route("/resume", methods=["POST"])
+def get_resume():
+    try:
+        data = request.get_json()
+        user_id = data.get("userId")
+
+        print(f"🔹 Fetching resume for userId: {user_id}")
+
+        if not user_id:
+            return jsonify({"message": "User ID is required."}), 400
+
+        # Find user and check for resume
+        user = collection.find_one({"_id": ObjectId(user_id)})
+        if not user:
+            return jsonify({"message": "User not found."}), 404
+
+        if "resume_id" not in user:
+            return jsonify({"message": "No resume found for this user."}), 404
+        print("Have resume")
+        # Retrieve resume from GridFS
+        resume_file = fs.get(user["resume_id"])
+        pdf_data = resume_file.read()
+
+        # ✅ Extract text from PDF
+        doc = fitz.open(stream=pdf_data, filetype="pdf")
+        resume_text = "\n".join([page.get_text() for page in doc])
+
+        print(f"✅ Extracted resume text for user: {user_id}")
+
+        return jsonify({
+            "resume_text": resume_text,
+            "user": {
+                "email": user["email"]
+            },
+            "filename": resume_file.filename
+        }), 200
+
+    except Exception as e:
+        print(f"❌ ERROR extracting resume: {e}")
+        return jsonify({"message": "Internal Server Error"}), 500
+
 
 @app.route('/grade-mult', methods=['POST'])
 def grade_mult():

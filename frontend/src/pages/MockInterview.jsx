@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import "./MockInterview.css";
+import { GlobalContext } from '../contexts/GlobalContext'; // Adjust path as needed
+import { useNavigate } from 'react-router-dom';
 
 const questions = [
   "Tell me about yourself.",
@@ -11,6 +13,8 @@ const questions = [
 ];
 
 const MockInterview = () => {
+  const location = useLocation(); // Get the state passed from PersonalInterview
+  const { resume, user } = location.state || {}; // Destructure resume and user from state
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [timer, setTimer] = useState(240); // 4 minutes in seconds
   const [recordingState, setRecordingState] = useState("idle");
@@ -21,6 +25,7 @@ const MockInterview = () => {
   const playbackRef = useRef(null); // Ref for the playback video element
   const [mediaRecorder, setMediaRecorder] = useState(null);
   const streamRef = useRef(null); // Ref to store the stream
+  console.log(resume)
 
   // Initialize the video stream only when a question is clicked
   useEffect(() => {
