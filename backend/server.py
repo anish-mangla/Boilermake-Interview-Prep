@@ -7,8 +7,9 @@ import os
 from bson import ObjectId
 
 from dotenv import load_dotenv
+import openai
 load_dotenv()
-OPEN_AI_API_KEY = os.getenv("OPEN_AI_API_KEY")
+OPEN_AI_API_KEY = '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'
 
 app = Flask(__name__)
 CORS(app)
@@ -24,6 +25,7 @@ client = MongoClient(mongo_uri)
 db = client["users"]
 collection = db["users"]
 fs = gridfs.GridFS(db)  # ✅ GridFS for storing resumes
+
 
 import re
 
@@ -59,8 +61,7 @@ def parse_ai_feedback(feedback_text):
 
 def get_ai_feedback(question, transcript):
     """Calls OpenAI API to get structured feedback on an interview response."""
-    openai.api_key = OPEN_AI_API_KEY  # Ensure API Key is set properly
-
+    openai.api_key = os.getenv("OPENAI_API_KEY")  # Ensure API Key is set properly
     prompt = f"""
     You are an AI assistant trained to evaluate behavioral interview responses based on four key categories:
     - **Communication**
@@ -172,16 +173,58 @@ def grade():
 
     # Define filenames for saving the video and transcript
     video_filename = "received_video" + str(index) + ".webm"
-    transcript_filename = "received_video.txt"
+    transcript_filename = "received_video" + str(index) + ".txt"
 
     # Save the uploaded video locally
     video.save(video_filename)
 
+    try:
+        import subprocess
+        import os
+
+        # Run the whisper command on the saved video.
+        # This assumes that calling `whisper received_video.webm --output_format txt`
+        # will generate a transcript file named "received_video.txt" in the same directory.
+        result = subprocess.run(
+            ["whisper", video_filename, "--output_format", "txt"],
+            capture_output=True,
+            text=True
+        )
+        if result.returncode != 0:
+            raise Exception(f"Whisper error: {result.stderr}")
+
+        # Read the transcript from the generated file
+        if not os.path.exists(transcript_filename):
+            raise Exception("Transcript file not found.")
+
+        with open(transcript_filename, "r", encoding="utf-8") as f:
+            transcript_text = f.read()
+
+        print("Transcript:", transcript_text)
+
+        # Optional: Remove the temporary video and transcript files
+        # os.remove(video_filename)
+        # os.remove(transcript_filename)
+
+        # For now, simply return the transcript. Later, you can pass it to your grading model.
+        feedback = get_ai_feedback(question, transcript_text)
+        print(feedback)
+        return jsonify({
+            "index": index,
+            "feedback": feedback,
+            "question": question,
+            "transcript": transcript_text
+        }), 200
+
+    except Exception as e:
+        print("Error processing video:", e)
+        return jsonify({"error": "Failed to process video"}), 500
+
+    
     # You can add further logic here to process the video, like creating a transcript or running analysis
 
     # Return a response
     return jsonify({"grade": "A"}) 
-
 
 # ✅ Login Route
 @app.route("/login", methods=["POST"])
