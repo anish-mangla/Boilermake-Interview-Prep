@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import "./MockInterview.css";
 
 const questions = [
@@ -11,18 +11,22 @@ const questions = [
 ];
 
 const MockInterview = () => {
+  const location = useLocation();
+  const { resume, user } = location.state || {};
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [timer, setTimer] = useState(240); // 4 minutes in seconds
   const [recordingState, setRecordingState] = useState("idle");
-  const [responsesMap, setResponsesMap] = useState({}); // Map of questions to videos
   const [recordedChunks, setRecordedChunks] = useState([]);
   const [countdownInterval, setCountdownInterval] = useState(null);
+  const [feedbacks, setFeedbacks] = useState([]); // Stores feedback for each question
+  const [showFeedback, setShowFeedback] = useState(false);
+  
   const videoRef = useRef(null);
-  const playbackRef = useRef(null); // Ref for the playback video element
+  const playbackRef = useRef(null);
   const [mediaRecorder, setMediaRecorder] = useState(null);
-  const streamRef = useRef(null); // Ref to store the stream
+  const streamRef = useRef(null);
 
-  // Initialize the video stream only when a question is clicked
+  // Initialize the video stream when a question is shown
   useEffect(() => {
     const initStream = async () => {
       if (!streamRef.current) {
@@ -43,14 +47,14 @@ const MockInterview = () => {
 
     initStream();
 
-    // Cleanup the stream when the component unmounts
+    // Cleanup when the component unmounts or question changes
     return () => {
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((track) => track.stop());
         streamRef.current = null;
       }
     };
-  }, [currentQuestionIndex]); // Init stream when current question changes
+  }, [currentQuestionIndex]);
 
   const handleRecord = () => {
     console.log("Recording started...");
@@ -60,37 +64,27 @@ const MockInterview = () => {
     setMediaRecorder(recorder);
     setRecordingState("recording");
 
-    // Reset recordedChunks to empty at the start of a new recording
+    // Reset recordedChunks at start of recording
     setRecordedChunks([]);
 
     recorder.ondataavailable = (event) => {
       if (event.data.size > 0) {
-        console.log("Data available:", event.data); // Debugging line
-
+        // Append the chunk to the recordedChunks array
         setRecordedChunks((prevChunks) => [...prevChunks, event.data]);
-        console.log("In finish")
-      const videoBlob = new Blob(recordedChunks, { type: "video/webm" });
-      const videoBlobURL = URL.createObjectURL(videoBlob);
-
-      // Map current question to its video URL
-      setResponsesMap((prevMap) => ({
-        ...prevMap,
-        [questions[currentQuestionIndex]]: { videoBlobURL, recordedChunks },
-      }));
-      console.log("Recorded video URL:", videoBlobURL);
       }
     };
 
     recorder.start();
     console.log("MediaRecorder started");
 
-    // Start the 4-minute timer when recording starts
-    setTimer(240); // Reset timer to 4 minutes (240 seconds)
+    // Start the 4-minute timer
+    setTimer(240);
     const countdown = setInterval(() => {
       setTimer((prevTime) => {
         if (prevTime <= 0) {
           clearInterval(countdown);
-          handleFinish(); // Finish when time runs out
+          handleFinish();
+          return 0;
         }
         return prevTime - 1;
       });
@@ -98,34 +92,57 @@ const MockInterview = () => {
     setCountdownInterval(countdown);
   };
 
-  const handleFinish = () => {
+  const handleFinish = async () => {
     console.log("Recording finished...");
     if (!mediaRecorder) return;
 
+    // Stop the recorder (this will trigger the onstop event if set)
     mediaRecorder.stop();
-    setRecordingState("finished");
 
-    // Create the video Blob URL and save it for playback
+    // When recording stops, process the recorded chunks
+    // Note: In this example, we assume that all the chunks are ready in recordedChunks.
     if (recordedChunks.length > 0) {
-        console.log("In finish")
       const videoBlob = new Blob(recordedChunks, { type: "video/webm" });
       const videoBlobURL = URL.createObjectURL(videoBlob);
-
-      // Map current question to its video URL
-      setResponsesMap((prevMap) => ({
-        ...prevMap,
-        [questions[currentQuestionIndex]]: { videoBlobURL, recordedChunks },
-      }));
       console.log("Recorded video URL:", videoBlobURL);
+
+      // Prepare formData for the /grade endpoint
+      const formData = new FormData();
+      formData.append("video", videoBlob);
+      formData.append("question", questions[currentQuestionIndex]);
+      formData.append("index", currentQuestionIndex);
+
+      try {
+        const response = await fetch("http://127.0.0.1:5000/grade", {
+          method: "POST",
+          body: formData,
+        });
+        const data = await response.json();
+        // Store the feedback (assuming the response contains "grade" and/or "transcript")
+        setFeedbacks((prevFeedbacks) => {
+          const newFeedbacks = [...prevFeedbacks];
+          newFeedbacks[currentQuestionIndex] = {
+            question: questions[currentQuestionIndex],
+            ...data,
+          };
+          return newFeedbacks;
+        });
+        console.log(
+          `Feedback received for question ${currentQuestionIndex + 1}:`,
+          data
+        );
+      } catch (error) {
+        console.error("Error submitting video for grading", error);
+        alert("Failed to submit video for grading.");
+      }
     }
 
-    // Stop the video and audio tracks
+    // Change state to finished and stop the timer and stream
+    setRecordingState("finished");
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
     }
-
-    // Clear interval and reset timer for next question
     if (countdownInterval) {
       clearInterval(countdownInterval);
     }
@@ -134,12 +151,10 @@ const MockInterview = () => {
   const handleNext = () => {
     console.log("Moving to next question...");
     if (currentQuestionIndex < questions.length - 1) {
-      setCurrentQuestionIndex(currentQuestionIndex + 1);
+      setCurrentQuestionIndex((prev) => prev + 1);
       setRecordingState("idle");
       setRecordedChunks([]);
-      setTimer(240); // Reset timer for the next question
-
-      // Clear interval and reset countdown
+      setTimer(240);
       if (countdownInterval) {
         clearInterval(countdownInterval);
         setCountdownInterval(null);
@@ -147,32 +162,9 @@ const MockInterview = () => {
     }
   };
 
-  const handleGrade = async () => {
-    console.log(responsesMap)
-    if (Object.keys(responsesMap).length === 0) return;
-
-    const formData = new FormData();
-    
-    // Loop through all responses and append them
-    Object.keys(responsesMap).forEach((question, index) => {
-      const response = responsesMap[question];
-      const blob = new Blob(response.recordedChunks, { type: "video/webm" });
-      formData.append(`videos[${index}]`, blob);
-      formData.append(`questions[${index}]`, question);
-    });
-    console.log(formData)
-    try {
-      const response = await fetch("http://127.0.0.1:5000/grade-mult", {
-        method: "POST",
-        body: formData,
-      });
-
-      const data = await response.json();
-      alert(`Grades received: ${JSON.stringify(data.grades)}`);
-    } catch (error) {
-      console.error("Error submitting videos for grading", error);
-      alert("Failed to submit videos for grading.");
-    }
+  const handleSubmitFeedback = () => {
+    // When all questions are done, display the collected feedback
+    setShowFeedback(true);
   };
 
   return (
@@ -183,41 +175,66 @@ const MockInterview = () => {
 
       <div className="video-container">
         {recordingState !== "finished" ? (
-          // Live camera preview while recording
           <video ref={videoRef} autoPlay muted className="camera-preview" />
         ) : (
           recordedChunks.length > 0 && (
-            // Show playback of recorded video after recording is finished
             <video
               ref={playbackRef}
               controls
               className="playback-preview"
-              src={URL.createObjectURL(new Blob(recordedChunks, { type: "video/webm" }))}
+              src={URL.createObjectURL(
+                new Blob(recordedChunks, { type: "video/webm" })
+              )}
             />
           )
         )}
       </div>
 
       <div className="controls-container">
-        {recordingState === "idle" && <button onClick={handleRecord}>Record</button>}
+        {recordingState === "idle" && (
+          <button onClick={handleRecord}>Record</button>
+        )}
 
         {recordingState === "recording" && (
           <>
-            <p>Time left: {Math.floor(timer / 60)}:{String(timer % 60).padStart(2, '0')}</p>
+            <p>
+              Time left: {Math.floor(timer / 60)}:
+              {String(timer % 60).padStart(2, "0")}
+            </p>
             <button onClick={handleFinish}>Finish</button>
           </>
         )}
 
-        {recordingState === "finished" && currentQuestionIndex === questions.length - 1 && (
-          <>
-            <button onClick={handleGrade}>Submit Grade</button>
-          </>
-        )}
+        {recordingState === "finished" &&
+          currentQuestionIndex < questions.length - 1 && (
+            <button onClick={handleNext}>Next Question</button>
+          )}
 
-        {recordingState === "finished" && currentQuestionIndex < questions.length - 1 && (
-          <button onClick={handleNext}>Next Question</button>
-        )}
+        {recordingState === "finished" &&
+          currentQuestionIndex === questions.length - 1 && (
+            <button onClick={handleSubmitFeedback}>Submit Grade</button>
+          )}
       </div>
+
+      {showFeedback && (
+        <div className="feedback-container">
+          <h3>Interview Feedback</h3>
+          {feedbacks.map((feedback, index) => (
+            <div key={index} className="feedback-item">
+              <h4>
+                Question {index + 1}: {feedback.question}
+              </h4>
+              {feedback.grade && <p>Grade: {feedback.grade}</p>}
+              {feedback.transcript && (
+                <div>
+                  <h5>Transcript:</h5>
+                  <p>{feedback.transcript}</p>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

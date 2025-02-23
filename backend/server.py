@@ -1,8 +1,10 @@
+
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from pymongo import MongoClient
 import gridfs
 import os
+from bson import ObjectId
 
 app = Flask(__name__)
 CORS(app)
@@ -18,6 +20,49 @@ client = MongoClient(mongo_uri)
 db = client["users"]
 collection = db["users"]
 fs = gridfs.GridFS(db)  # ✅ GridFS for storing resumes
+
+# ✅ Fetch Resume and Extract Text
+@app.route("/resume", methods=["POST"])
+def get_resume():
+    try:
+        data = request.get_json()
+        user_id = data.get("userId")
+
+        print(f"🔹 Fetching resume for userId: {user_id}")
+
+        if not user_id:
+            return jsonify({"message": "User ID is required."}), 400
+
+        # Find user and check for resume
+        user = collection.find_one({"_id": ObjectId(user_id)})
+        if not user:
+            return jsonify({"message": "User not found."}), 404
+
+        if "resume_id" not in user:
+            return jsonify({"message": "No resume found for this user."}), 404
+        print("Have resume")
+        # Retrieve resume from GridFS
+        resume_file = fs.get(user["resume_id"])
+        pdf_data = resume_file.read()
+
+        # ✅ Extract text from PDF
+        doc = fitz.open(stream=pdf_data, filetype="pdf")
+        resume_text = "\n".join([page.get_text() for page in doc])
+
+        print(f"✅ Extracted resume text for user: {user_id}")
+
+        return jsonify({
+            "resume_text": resume_text,
+            "user": {
+                "email": user["email"]
+            },
+            "filename": resume_file.filename
+        }), 200
+
+    except Exception as e:
+        print(f"❌ ERROR extracting resume: {e}")
+        return jsonify({"message": "Internal Server Error"}), 500
+
 
 @app.route('/grade-mult', methods=['POST'])
 def grade_mult():
@@ -56,54 +101,29 @@ def grade_mult():
 
 @app.route('/grade', methods=['POST'])
 def grade():
-    videos = request.files.getlist('videos[]')
-
+    # Retrieve the uploaded video
+    video = request.files['video']  # Update 'videos' to 'video' to match your form data key
+    print(video)
+    # Retrieve the question from the form data
     question = request.form['question']
+    index = request.form['index']
 
+    # Print for debugging (optional)
     # print("Received video:", video.filename)
     # print("Question:", question)
 
     # Define filenames for saving the video and transcript
-    video_filename = "received_video.webm"
+    video_filename = "received_video" + str(index) + ".webm"
     transcript_filename = "received_video.txt"
 
     # Save the uploaded video locally
     video.save(video_filename)
 
-    try:
-        import subprocess
-        import os
+    # You can add further logic here to process the video, like creating a transcript or running analysis
 
-        # Run the whisper command on the saved video.
-        # This assumes that calling `whisper received_video.webm --output_format txt`
-        # will generate a transcript file named "received_video.txt" in the same directory.
-        result = subprocess.run(
-            ["whisper", video_filename, "--output_format", "txt"],
-            capture_output=True,
-            text=True
-        )
-        if result.returncode != 0:
-            raise Exception(f"Whisper error: {result.stderr}")
+    # Return a response
+    return jsonify({"grade": "A"}) 
 
-        # Read the transcript from the generated file
-        if not os.path.exists(transcript_filename):
-            raise Exception("Transcript file not found.")
-
-        with open(transcript_filename, "r", encoding="utf-8") as f:
-            transcript_text = f.read()
-
-        print("Transcript:", transcript_text)
-
-        # Optional: Remove the temporary video and transcript files
-        os.remove(video_filename)
-        os.remove(transcript_filename)
-
-        # For now, simply return the transcript. Later, you can pass it to your grading model.
-        return jsonify({"transcript": transcript_text})
-
-    except Exception as e:
-        print("Error processing video:", e)
-        return jsonify({"error": "Failed to process video"}), 500
 
 
 # ✅ Login Route
