@@ -1,0 +1,87 @@
+/* ReviewPerformance.css */
+
+/* Main container styling */
+.review-performance-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background-color: #f8f9fa;
+    padding: 20px;
+  }
+  
+  /* Title styling */
+  .review-title {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 20px;
+  }
+  
+  /* Performance Summary Section */
+  .performance-summary {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    width: 60%;
+    text-align: center;
+    margin-bottom: 30px;
+  }
+  
+  .summary-title {
+    font-size: 1.5rem;
+    color: #444;
+    margin-bottom: 10px;
+  }
+  
+  .summary-text {
+    font-size: 1rem;
+    color: #666;
+  }
+  
+  /* Performance Table Container */
+  .performance-table-container {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    width: 80%;
+    text-align: center;
+  }
+  
+  /* Table Styling */
+  .performance-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+  }
+  
+  .performance-table th, .performance-table td {
+    padding: 12px;
+    border: 1px solid #ddd;
+    text-align: center;
+  }
+  
+  .performance-table th {
+    background-color: #007bff;
+    color: white;
+    font-weight: bold;
+  }
+  
+  .performance-table tbody tr:nth-child(even) {
+    background-color: #f2f2f2;
+  }
+  
+  .performance-table tbody tr:hover {
+    background-color: #e0e0e0;
+  }
+  
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .performance-summary, .performance-table-container {
+      width: 90%;
+    }
+  }
+  
