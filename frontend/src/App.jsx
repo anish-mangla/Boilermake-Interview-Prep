@@ -10,6 +10,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import UploadResume from './pages/UploadResume';
 import PracticeQuestions from "./pages/PracticeQuestions";
 import QuestionDetail from "./pages/QuestionDetail";
+import ReviewPerformance from './pages/ReviewPerformance';
 import PersonalInterview from "./pages/PersonalInterview";
 
 import './App.css';
@@ -35,6 +36,7 @@ function App() {
 
           {/* Notice the dynamic URL segment :questionIndex */}
         <Route path="/practice-questions/:questionIndex" element={<QuestionDetail />} />
+        <Route path="/review-performance" element={<ReviewPerformance />} />
 
         </Routes>
       </BrowserRouter>
