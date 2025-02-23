@@ -4,17 +4,12 @@ import "./MockInterview.css";
 import { GlobalContext } from '../contexts/GlobalContext'; // Adjust path as needed
 import { useNavigate } from 'react-router-dom';
 
-const questions = [
-  "Tell me about yourself.",
-  "What are your strengths and weaknesses?",
-  "Why do you want to work here?",
-  "Where do you see yourself in 5 years?",
-  "Tell us about a challenge you faced and how you overcame it."
-];
+
 
 const MockInterview = () => {
   const location = useLocation();
   const { resume, user } = location.state || {};
+  const questions = resume.questions
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [timer, setTimer] = useState(240); // 4 minutes in seconds
   const [recordingState, setRecordingState] = useState("idle");

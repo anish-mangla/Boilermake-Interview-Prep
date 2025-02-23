@@ -1,4 +1,5 @@
 
+import fitz
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from pymongo import MongoClient
@@ -116,6 +117,28 @@ def get_ai_feedback(question, transcript):
         return {"error": "Failed to generate AI feedback"}
 
 
+# Function to generate questions using OpenAI's API 
+import openai
+import os
+
+def generate_questions(text):
+    client = openai.Client()  # Initialize the new client
+
+    prompt = f"Generate five interview questions based on this resume:\n{text}\n\nQuestions:"
+    
+    response = client.chat.completions.create(
+        model="gpt-4",
+        messages=[
+            {"role": "system", "content": "You are an AI that creates interview questions based on resumes."},
+            {"role": "user", "content": prompt}
+        ],
+        max_tokens=200
+    )
+
+    # Extract questions from response
+    questions = response.choices[0].message.content.strip().split("\n")
+    return questions[:5]  # Ensure we only take the top 5
+
 # ✅ Fetch Resume and Extract Text
 @app.route("/resume", methods=["POST"])
 def get_resume():
@@ -143,15 +166,15 @@ def get_resume():
         # ✅ Extract text from PDF
         doc = fitz.open(stream=pdf_data, filetype="pdf")
         resume_text = "\n".join([page.get_text() for page in doc])
+        questions = generate_questions(resume_text)
 
         print(f"✅ Extracted resume text for user: {user_id}")
 
         return jsonify({
-            "resume_text": resume_text,
+            "questions": questions,
             "user": {
                 "email": user["email"]
             },
-            "filename": resume_file.filename
         }), 200
 
     except Exception as e:
