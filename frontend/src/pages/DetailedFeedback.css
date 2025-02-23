@@ -1,9 +1,9 @@
 .detailed-feedback-container {
     max-width: 800px;
     margin: 2rem auto;
-    background-color: #2c2333;
-    color: #fff;
     padding: 1.5rem;
+    background-color: #2c2333; /* Dark background */
+    color: #ffffff;            /* White text */
     border-radius: 8px;
   }
   
@@ -13,34 +13,27 @@
     margin-bottom: 0.5rem;
   }
   
-  .transcript-section {
-    margin: 1rem 0;
-    padding: 1rem;
+  .transcript-section,
+  .feedback-section {
+    margin-top: 1.5rem;
     background-color: #3a2f42;
-    border-radius: 6px;
-  }
-  
-  .categories-section {
-    margin: 1rem 0;
-  }
-  
-  .category-feedback {
-    margin-bottom: 1rem;
-    background-color: #443757;
     padding: 1rem;
     border-radius: 6px;
   }
   
-  .final-score {
-    margin-top: 1rem;
-    font-weight: bold;
+  .transcript-section h4,
+  .feedback-section h4 {
+    margin-bottom: 0.75rem;
   }
   
   .raw-feedback {
-    margin-top: 1.5rem;
-    background-color: #554d5e;
+    background-color: #443757;
     padding: 1rem;
     border-radius: 6px;
+    margin: 0;
+    /* Ensure multi-line text wraps and is scrollable if very long: */
     white-space: pre-wrap;
+    max-height: 300px;   /* adjust as needed */
+    overflow-y: auto;
   }
   
