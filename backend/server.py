@@ -25,6 +25,7 @@ db = client["users"]
 collection = db["users"]
 fs = gridfs.GridFS(db)  # ✅ GridFS for storing resumes
 
+
 import re
 
 def parse_ai_feedback(feedback_text):
@@ -181,7 +182,6 @@ def grade():
 
     # Return a response
     return jsonify({"grade": "A"}) 
-
 
 # ✅ Login Route
 @app.route("/login", methods=["POST"])
