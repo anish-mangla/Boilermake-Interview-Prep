@@ -16,6 +16,9 @@ const Dashboard = () => {
     const handlePracticeQuestionsClick = () => {
         navigate("/practice-questions");
     };
+    const handleReviewPerformanceClick = () => {
+        navigate("/review-performance");
+    }
 
     const handleMockInterviewClick = () => {
         navigate("/personal-interview");
@@ -55,7 +58,7 @@ const Dashboard = () => {
         </div>
 
         {/* 4. Review My Performance */}
-        <div className="dashboard-action-card">
+        <div className="dashboard-action-card" onClick={handleReviewPerformanceClick} style={{ cursor: "pointer" }}>
           {/* <FaChartLine className="action-icon" /> */}
           <div className="action-icon">📈</div>
           <p>Review My Performance</p>
