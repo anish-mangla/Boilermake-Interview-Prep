@@ -136,8 +136,17 @@ const MockInterview = () => {
     }
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     console.log("Moving to next question...");
+    const blob = new Blob(recordedChunks, { type: "video/webm" });
+    const formData = new FormData();
+    formData.append("video", blob);
+    formData.append("question", questions[currentQuestionIndex]);
+    formData.append("index", currentQuestionIndex + 1);
+    const response = await fetch("http://127.0.0.1:5000/grade", {
+      method: "POST",
+      body: formData,
+    });
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
       setRecordingState("idle");
@@ -153,31 +162,17 @@ const MockInterview = () => {
   };
 
   const handleGrade = async () => {
-    console.log(responsesMap)
-    if (Object.keys(responsesMap).length === 0) return;
-
+   console.log("Display")
+   console.log("Moving to next question...");
+    const blob = new Blob(recordedChunks, { type: "video/webm" });
     const formData = new FormData();
-    
-    // Loop through all responses and append them
-    Object.keys(responsesMap).forEach((question, index) => {
-      const response = responsesMap[question];
-      const blob = new Blob(response.recordedChunks, { type: "video/webm" });
-      formData.append(`videos[${index}]`, blob);
-      formData.append(`questions[${index}]`, question);
+    formData.append("video", blob);
+    formData.append("question", questions[currentQuestionIndex]);
+    formData.append("index", currentQuestionIndex + 1);
+    const response = await fetch("http://127.0.0.1:5000/grade", {
+      method: "POST",
+      body: formData,
     });
-    console.log(formData)
-    try {
-      const response = await fetch("http://127.0.0.1:5000/grade-mult", {
-        method: "POST",
-        body: formData,
-      });
-
-      const data = await response.json();
-      alert(`Grades received: ${JSON.stringify(data.grades)}`);
-    } catch (error) {
-      console.error("Error submitting videos for grading", error);
-      alert("Failed to submit videos for grading.");
-    }
   };
 
   return (
