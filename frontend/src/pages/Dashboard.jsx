@@ -1,10 +1,16 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import "./Dashboard.css";
 
 // If you have icon components (e.g., Font Awesome or Material icons), you can import them here
 // import { FaUpload, FaQuestion, FaChalkboardTeacher, FaChartLine } from "react-icons/fa";
 
 const Dashboard = () => {
+    const navigate = useNavigate();
+
+    const handleResumeClick = () => {
+        navigate("/upload-resume");
+    };
   return (
     <div className="dashboard-container">
       {/* Main heading (no button-like appearance) */}
@@ -18,7 +24,7 @@ const Dashboard = () => {
       {/* Action cards */}
       <div className="dashboard-actions">
         {/* 1. Upload & Analyze Resume */}
-        <div className="dashboard-action-card">
+        <div className="dashboard-action-card" onClick={handleResumeClick} style={{ cursor: "pointer" }}>
           {/* <FaUpload className="action-icon" /> */} 
           {/* If you have an icon library, uncomment the line above and remove the placeholder below */}
           <div className="action-icon">📄</div>

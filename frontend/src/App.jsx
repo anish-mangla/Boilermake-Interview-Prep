@@ -8,7 +8,7 @@ import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
 import ProtectedRoute from './components/ProtectedRoute';
 
-import ResumeUpload from './pages/Resume_upload';
+import UploadResume from './pages/UploadResume';
 import './App.css';
 
 function App() {
@@ -23,6 +23,8 @@ function App() {
 
           {/* Protected Dashboard Route */}
           <Route path="/dashboard" element={<ProtectedRoute element={<Dashboard />} />} />
+          {/* NEW: Upload Resume route */}
+          <Route path="/upload-resume" element={<UploadResume />} />
         </Routes>
       </BrowserRouter>
     </GlobalProvider>
