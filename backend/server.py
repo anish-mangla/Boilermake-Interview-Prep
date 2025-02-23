@@ -32,6 +32,11 @@ def grade():
 
     # Save video if needed
     video.save("received_video.webm")
+    # call whisper
+    # get text
+    # call abhi
+    # get grade and response
+    # return grade
 
     # Mock grade response
     return jsonify({"grade": "A+"})
