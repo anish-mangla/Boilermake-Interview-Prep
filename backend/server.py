@@ -18,6 +18,25 @@ db = client["users"]
 collection = db["users"]
 fs = gridfs.GridFS(db)  # ✅ GridFS for storing resumes
 
+
+@app.route('/grade', methods=['POST'])
+def grade():
+    if 'video' not in request.files or 'question' not in request.form:
+        return jsonify({"error": "Missing video or question"}), 400
+
+    video = request.files['video']
+    question = request.form['question']
+
+    print("Received video:", video.filename)
+    print("Question:", question)
+
+    # Save video if needed
+    video.save("received_video.webm")
+
+    # Mock grade response
+    return jsonify({"grade": "A+"})
+
+
 # ✅ Login Route
 @app.route("/login", methods=["POST"])
 def login_handler():
