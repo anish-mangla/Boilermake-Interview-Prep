@@ -11,6 +11,11 @@ const Dashboard = () => {
     const handleResumeClick = () => {
         navigate("/upload-resume");
     };
+
+    // Handler for the Practice Common Questions card
+    const handlePracticeQuestionsClick = () => {
+        navigate("/practice-questions");
+    };
   return (
     <div className="dashboard-container">
       {/* Main heading (no button-like appearance) */}
@@ -32,7 +37,7 @@ const Dashboard = () => {
         </div>
 
         {/* 2. Practice Common Questions */}
-        <div className="dashboard-action-card">
+        <div className="dashboard-action-card" onClick={handlePracticeQuestionsClick} style={{ cursor: "pointer" }}>
           {/* <FaQuestion className="action-icon" /> */}
           <div className="action-icon">❓</div>
           <p>Practice Common Questions</p>
