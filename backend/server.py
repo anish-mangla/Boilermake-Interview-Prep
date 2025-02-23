@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from pymongo import MongoClient
 import gridfs
+import os
 
 app = Flask(__name__)
 CORS(app)
@@ -18,13 +19,45 @@ db = client["users"]
 collection = db["users"]
 fs = gridfs.GridFS(db)  # ✅ GridFS for storing resumes
 
+@app.route('/grade-mult', methods=['POST'])
+def grade_mult():
+    videos = [request.files[f'videos[{i}]'] for i in range(5)]  # Accessing files[0], files[1], etc.
+    questions = [request.form[f'questions[{i}]'] for i in range(5)]  # Accessing questions[0], questions[1], etc.
+    print(videos)
+    print(questions)
+    # Ensure the 'uploads' directory exists
+    uploads_dir = 'uploads'
+    if not os.path.exists(uploads_dir):
+        os.makedirs(uploads_dir)
+    if len(videos) != len(questions):
+        return jsonify({"error": "Mismatch between number of videos and questions"}), 400
+
+    grades = []
+    for video, question in zip(videos, questions):
+        print("Received video:", video.filename)
+        print("Question:", question)
+
+        # Save video if needed
+        video_path = os.path.join("uploads", video.filename)
+        video.save(video_path)
+
+        # Call Whisper (or another service) to get text from the video
+        # call_whisper(video_path)  # Implement your logic here
+        
+        # Call Abhi (or another service) to grade based on the video and question
+        # grade = call_abhi(question, video_path)  # Implement your logic here
+
+        # Mock grade response
+        grades.append({"question": question, "grade": "A+"})
+
+    return jsonify({"grades": grades})    
+
+
 
 @app.route('/grade', methods=['POST'])
 def grade():
-    if 'video' not in request.files or 'question' not in request.form:
-        return jsonify({"error": "Missing video or question"}), 400
+    videos = request.files.getlist('videos[]')
 
-    video = request.files['video']
     question = request.form['question']
 
     print("Received video:", video.filename)
