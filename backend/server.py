@@ -6,6 +6,10 @@ import gridfs
 import os
 from bson import ObjectId
 
+from dotenv import load_dotenv
+load_dotenv()
+OPEN_AI_API_KEY = os.getenv("OPEN_AI_API_KEY")
+
 app = Flask(__name__)
 CORS(app)
 
@@ -20,6 +24,97 @@ client = MongoClient(mongo_uri)
 db = client["users"]
 collection = db["users"]
 fs = gridfs.GridFS(db)  # ✅ GridFS for storing resumes
+
+
+import re
+
+def parse_ai_feedback(feedback_text):
+    """
+    Parses AI-generated structured feedback and extracts the total score and descriptions.
+
+    Args:
+    - feedback_text (str): The raw AI-generated feedback.
+
+    Returns:
+    - dict: A dictionary containing the total score and category descriptions.
+    """
+    categories = ["Communication", "Leadership", "Problem Solving", "Teamwork"]
+    feedback_data = {"descriptions": {}}
+
+    # Extract category descriptions and scores
+    for category in categories:
+        pattern = rf"\*\*{category}:\*\*\s*(.*?)\n\*\*Score:\s*(\d+)/10\*\*"
+        match = re.search(pattern, feedback_text, re.DOTALL)
+
+        if match:
+            description = match.group(1).strip()
+            score = int(match.group(2))
+            feedback_data["descriptions"][category] = {"score": score, "description": description}
+
+    # Extract total score
+    total_score_match = re.search(r"\*\*Final Score:\s*(\d+)/40\*\*", feedback_text)
+    feedback_data["total_score"] = int(total_score_match.group(1)) if total_score_match else None
+
+    return feedback_data
+
+
+def get_ai_feedback(question, transcript):
+    """Calls OpenAI API to get structured feedback on an interview response."""
+    openai.api_key = OPEN_AI_API_KEY  # Ensure API Key is set properly
+
+    prompt = f"""
+    You are an AI assistant trained to evaluate behavioral interview responses based on four key categories:
+    - **Communication**
+    - **Leadership**
+    - **Problem Solving**
+    - **Teamwork**
+
+    Given the following question and response, analyze the answer and provide structured feedback.
+
+    ### **Question:**
+    {question}
+
+    ### **Candidate Response:**
+    {transcript}
+
+    ---
+    ### **Structured Feedback:**
+    **Communication:** 
+    *[Give a score out of 10 and provide specific feedback on how well the candidate communicated their response]*
+
+    **Leadership:** 
+    *[Give a score out of 10 and analyze if the candidate showed leadership qualities and decision-making skills]*
+
+    **Problem Solving:** 
+    *[Give a score out of 10 and assess their ability to approach and resolve challenges effectively]*
+
+    **Teamwork:** 
+    *[Give a score out of 10 and comment on their ability to work collaboratively in a team environment]*
+
+    Finish by giving a final score out of 40.
+    """
+
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-4",  # Use GPT-4 for better feedback (or use "gpt-3.5-turbo")
+            messages=[
+                {"role": "system", "content": "You are an AI expert in behavioral interview evaluation."},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=500
+        )
+
+        feedback_text = response["choices"][0]["message"]["content"]
+        
+        # 🔹 Parse the feedback into structured JSON format
+        parsed_feedback = parse_ai_feedback(feedback_text)
+
+        return parsed_feedback  # ✅ Returns JSON-friendly dict
+
+    except Exception as e:
+        print(f"❌ OpenAI API Error: {e}")
+        return {"error": "Failed to generate AI feedback"}
+
 
 # ✅ Fetch Resume and Extract Text
 @app.route("/resume", methods=["POST"])
@@ -63,42 +158,6 @@ def get_resume():
         print(f"❌ ERROR extracting resume: {e}")
         return jsonify({"message": "Internal Server Error"}), 500
 
-
-@app.route('/grade-mult', methods=['POST'])
-def grade_mult():
-    videos = [request.files[f'videos[{i}]'] for i in range(5)]  # Accessing files[0], files[1], etc.
-    questions = [request.form[f'questions[{i}]'] for i in range(5)]  # Accessing questions[0], questions[1], etc.
-    print(videos)
-    print(questions)
-    # Ensure the 'uploads' directory exists
-    uploads_dir = 'uploads'
-    if not os.path.exists(uploads_dir):
-        os.makedirs(uploads_dir)
-    if len(videos) != len(questions):
-        return jsonify({"error": "Mismatch between number of videos and questions"}), 400
-
-    grades = []
-    for video, question in zip(videos, questions):
-        print("Received video:", video.filename)
-        print("Question:", question)
-
-        # Save video if needed
-        video_path = os.path.join("uploads", video.filename)
-        video.save(video_path)
-
-        # Call Whisper (or another service) to get text from the video
-        # call_whisper(video_path)  # Implement your logic here
-        
-        # Call Abhi (or another service) to grade based on the video and question
-        # grade = call_abhi(question, video_path)  # Implement your logic here
-
-        # Mock grade response
-        grades.append({"question": question, "grade": "A+"})
-
-    return jsonify({"grades": grades})    
-
-
-
 @app.route('/grade', methods=['POST'])
 def grade():
     # Retrieve the uploaded video
@@ -123,8 +182,6 @@ def grade():
 
     # Return a response
     return jsonify({"grade": "A"}) 
-
-
 
 # ✅ Login Route
 @app.route("/login", methods=["POST"])
@@ -251,6 +308,52 @@ def update_resume():
     except Exception as e:
         print(f"❌ RESUME UPLOAD ERROR: {e}")
         return jsonify({"message": f"Internal Server Error: {e}"}), 500
+
+
+def get_ai_feedback(question, transcript):
+    """Calls OpenAI API to get structured feedback on an interview response."""
+    prompt = f"""
+    You are an AI assistant trained to evaluate behavioral interview responses based on four key categories:
+    - **Communication**
+    - **Leadership**
+    - **Problem Solving**
+    - **Teamwork**
+
+    Given the following question and response, analyze the answer and provide structured feedback.
+
+    ### **Question:**
+    {question}
+
+    ### **Candidate Response:**
+    {transcript}
+
+    ---
+    ### **Structured Feedback:**
+    **Communication:** 
+    *[Give a score out of 10 and provide specific feedback on how well the candidate communicated their response]*
+
+    **Leadership:** 
+    *[Give a score out of 10 and analyze if the candidate showed leadership qualities and decision-making skills]*
+
+    **Problem Solving:** 
+    *[Give a score out of 10 and assess their ability to approach and resolve challenges effectively]*
+
+    **Teamwork:** 
+    *[Give a score out of 10 and comment on their ability to work collaboratively in a team environment]*
+
+    Finish by giving a final score out of 50.
+    """
+
+    response = openai.chat.completions.create(
+        
+        model="gpt-3.5-turbo",  # You can also use gpt-4 or gpt-3.5-turbo
+        messages=[{"role": "system", "content": "You are an AI expert in behavioral interview evaluation."},
+                  {"role": "user", "content": prompt}],
+        max_tokens=500
+    )
+
+    # Access the content using the correct attributes
+    return response.choices[0].message.content # Changed this line
 
 
 # ✅ Health Check Route (Optional, for debugging)

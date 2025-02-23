@@ -5,79 +5,80 @@
 
 /* Container for the entire upload area */
 .upload-resume-container {
-    width: 100%;
-    max-width: 600px; /* adjust to your preference */
-    margin: 2rem auto;
-    margin-top: 8rem; /* adjust to your preference */
-    text-align: center;
-    background-color: #0d0d2b; /* dark background */
-    padding: 2rem;
-    border-radius: 8px;
-    color: #fff;
-    box-sizing: border-box;
-  }
-  
-  /* Heading (no longer looks like a button) */
-  .upload-resume-heading {
-    font-size: 1.8rem;
-    margin-bottom: 1rem;
-  }
-  
-  /* Subtitle text under the heading */
-  .upload-resume-subtitle {
-    font-size: 1rem;
-    margin-bottom: 2rem;
-    color: #b8a3ff; /* lighter purple text, if you like */
-  }
-  
-  /* The drag-and-drop area */
-  .upload-drop-area {
-    position: relative;
-    width: 100%;
-    min-height: 150px;
-    border: 2px dashed #4e3b78; /* dashed border to mimic drop zone */
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 1.5rem;
-    transition: border-color 0.3s ease;
-  }
-  
-  /* File input is hidden, but label is used to style the clickable area */
-  .file-input {
-    display: none; 
-  }
-  
-  /* Label acts as the clickable area or drop zone content */
-  .drop-area-label {
-    cursor: pointer;
-    font-size: 1rem;
-    color: #ffffff;
-    padding: 1rem;
-    text-align: center;
-    display: inline-block;
-  }
-  
-  /* Hover effect when user drags over the drop area */
-  .upload-drop-area:hover,
-  .upload-drop-area:focus-within {
-    border-color: #b8a3ff;
-  }
-  
-  /* The upload button */
-  .upload-resume-button {
-    background-color: #145943; 
-    color: #ffffff;
-    border: none;
-    border-radius: 4px;
-    padding: 0.7rem 1.2rem;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-  }
-  
-  .upload-resume-button:hover {
-    background-color: #1b7d5e;
-  }
-  
+  width: 100%;
+  max-width: 600px; /* Adjust to your preference */
+  margin: 2rem auto;
+  margin-top: 8rem; /* Adjust to your preference */
+  text-align: center;
+  background-color: #2a1e38; /* Dark purple background */
+  padding: 2rem;
+  border-radius: 8px;
+  color: #fff;
+  box-sizing: border-box;
+}
+
+/* Heading */
+.upload-resume-heading {
+  font-size: 1.8rem;
+  margin-bottom: 1rem;
+  color: #ffffff;
+}
+
+/* Subtitle text under the heading */
+.upload-resume-subtitle {
+  font-size: 1rem;
+  margin-bottom: 2rem;
+  color: #c3a6ff; /* Softer purple text */
+}
+
+/* The drag-and-drop area */
+.upload-drop-area {
+  position: relative;
+  width: 100%;
+  min-height: 150px;
+  border: 2px dashed #7353ba; /* Dashed border */
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+  transition: border-color 0.3s ease;
+  background-color: #3b2853; /* Slightly lighter purple for contrast */
+}
+
+/* File input is hidden, but label is used to style the clickable area */
+.file-input {
+  display: none; 
+}
+
+/* Label acts as the clickable area or drop zone content */
+.drop-area-label {
+  cursor: pointer;
+  font-size: 1rem;
+  color: #ffffff;
+  padding: 1rem;
+  text-align: center;
+  display: inline-block;
+}
+
+/* Hover effect when user drags over the drop area */
+.upload-drop-area:hover,
+.upload-drop-area:focus-within {
+  border-color: #c3a6ff;
+}
+
+/* The upload button */
+.upload-resume-button {
+  background-color: #5b3b8a; /* Dark purple */
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  padding: 0.7rem 1.2rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.upload-resume-button:hover {
+  background-color: #8361c5;
+}

@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import "./MockInterview.css";
+import { GlobalContext } from '../contexts/GlobalContext'; // Adjust path as needed
+import { useNavigate } from 'react-router-dom';
 
 const questions = [
   "Tell me about yourself.",
@@ -24,7 +26,8 @@ const MockInterview = () => {
   const videoRef = useRef(null);
   const playbackRef = useRef(null);
   const [mediaRecorder, setMediaRecorder] = useState(null);
-  const streamRef = useRef(null);
+  const streamRef = useRef(null); // Ref to store the stream
+  console.log(resume)
 
   // Initialize the video stream when a question is shown
   useEffect(() => {
@@ -148,8 +151,17 @@ const MockInterview = () => {
     }
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     console.log("Moving to next question...");
+    const blob = new Blob(recordedChunks, { type: "video/webm" });
+    const formData = new FormData();
+    formData.append("video", blob);
+    formData.append("question", questions[currentQuestionIndex]);
+    formData.append("index", currentQuestionIndex + 1);
+    const response = await fetch("http://127.0.0.1:5000/grade", {
+      method: "POST",
+      body: formData,
+    });
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex((prev) => prev + 1);
       setRecordingState("idle");
@@ -165,6 +177,18 @@ const MockInterview = () => {
   const handleSubmitFeedback = () => {
     // When all questions are done, display the collected feedback
     setShowFeedback(true);
+  const handleGrade = async () => {
+   console.log("Display")
+   console.log("Moving to next question...");
+    const blob = new Blob(recordedChunks, { type: "video/webm" });
+    const formData = new FormData();
+    formData.append("video", blob);
+    formData.append("question", questions[currentQuestionIndex]);
+    formData.append("index", currentQuestionIndex + 1);
+    const response = await fetch("http://127.0.0.1:5000/grade", {
+      method: "POST",
+      body: formData,
+    });
   };
 
   return (

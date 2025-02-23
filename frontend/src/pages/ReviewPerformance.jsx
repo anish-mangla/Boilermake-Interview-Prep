@@ -19,24 +19,20 @@ const ReviewPerformance = () => {
           <thead>
             <tr>
               <th>Date</th>
-              <th>Question Category</th>
               <th>Grade</th>
             </tr>
           </thead>
           <tbody>
             <tr>
               <td>Feb 22, 2025</td>
-              <td>Behavioral</td>
               <td>A+</td>
             </tr>
             <tr>
               <td>Feb 18, 2025</td>
-              <td>Technical</td>
               <td>B</td>
             </tr>
             <tr>
               <td>Feb 15, 2025</td>
-              <td>Case Study</td>
               <td>A</td>
             </tr>
           </tbody>
