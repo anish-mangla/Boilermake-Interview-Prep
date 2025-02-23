@@ -376,52 +376,6 @@ def update_resume():
         return jsonify({"message": f"Internal Server Error: {e}"}), 500
 
 
-def get_ai_feedback(question, transcript):
-    """Calls OpenAI API to get structured feedback on an interview response."""
-    prompt = f"""
-    You are an AI assistant trained to evaluate behavioral interview responses based on four key categories:
-    - **Communication**
-    - **Leadership**
-    - **Problem Solving**
-    - **Teamwork**
-
-    Given the following question and response, analyze the answer and provide structured feedback.
-
-    ### **Question:**
-    {question}
-
-    ### **Candidate Response:**
-    {transcript}
-
-    ---
-    ### **Structured Feedback:**
-    **Communication:** 
-    *[Give a score out of 10 and provide specific feedback on how well the candidate communicated their response]*
-
-    **Leadership:** 
-    *[Give a score out of 10 and analyze if the candidate showed leadership qualities and decision-making skills]*
-
-    **Problem Solving:** 
-    *[Give a score out of 10 and assess their ability to approach and resolve challenges effectively]*
-
-    **Teamwork:** 
-    *[Give a score out of 10 and comment on their ability to work collaboratively in a team environment]*
-
-    Finish by giving a final score out of 50.
-    """
-
-    response = openai.chat.completions.create(
-        
-        model="gpt-3.5-turbo",  # You can also use gpt-4 or gpt-3.5-turbo
-        messages=[{"role": "system", "content": "You are an AI expert in behavioral interview evaluation."},
-                  {"role": "user", "content": prompt}],
-        max_tokens=500
-    )
-
-    # Access the content using the correct attributes
-    return response.choices[0].message.content # Changed this line
-
-
 # ✅ Health Check Route (Optional, for debugging)
 @app.route("/health", methods=["GET"])
 def health_check():
