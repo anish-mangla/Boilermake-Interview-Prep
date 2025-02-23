@@ -16,6 +16,8 @@ const DetailedFeedback = () => {
   }
 
   const { index, feedback, question, transcript } = feedbackData;
+  const descriptions = feedback?.descriptions || {};
+  const totalScore = feedback?.total_score;
 
   return (
     <div className="detailed-feedback-container">
@@ -35,6 +37,7 @@ const DetailedFeedback = () => {
           <p>No AI feedback available.</p>
         )}
       </div>
+
     </div>
   );
 };
