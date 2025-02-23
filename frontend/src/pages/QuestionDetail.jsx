@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import "./QuestionDetail.css";
 
-// Keep same as the questions list from PracticeQuestions.jsx
 const questions = [
   "Tell me about yourself.",
   "What are your strengths?",
@@ -30,30 +29,25 @@ const QuestionDetail = () => {
   const { questionIndex } = useParams();
   const question = questions[questionIndex] || "Unknown Question";
 
-  // State to hold the stream (for internal logic if needed)
   const [stream, setStream] = useState(null);
-  // Use a ref to store the stream for cleanup
   const streamRef = useRef(null);
 
-  // MediaRecorder instance and recorded chunks
   const [mediaRecorder, setMediaRecorder] = useState(null);
   const [recordedChunks, setRecordedChunks] = useState([]);
 
-  // Recording state: "idle" | "recording" | "paused" | "finished"
   const [recordingState, setRecordingState] = useState("idle");
 
-  // Reference to the video element showing the live camera feed
   const videoRef = useRef(null);
+  const playbackRef = useRef(null);
 
   useEffect(() => {
-    // Initialize the camera stream only once on mount
     const initStream = async () => {
       try {
         const userStream = await navigator.mediaDevices.getUserMedia({
           video: true,
           audio: true,
         });
-        streamRef.current = userStream; // Store in ref for later cleanup
+        streamRef.current = userStream;
         setStream(userStream);
 
         if (videoRef.current) {
@@ -66,21 +60,21 @@ const QuestionDetail = () => {
 
     initStream();
 
-    // Cleanup: Stop the camera stream when component unmounts
     return () => {
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((track) => track.stop());
+        streamRef.current = null;
+        setStream(null);
       }
     };
   }, []);
 
-  // Start recording
   const handleRecord = () => {
     if (!stream) return;
 
     const recorder = new MediaRecorder(stream);
     setMediaRecorder(recorder);
-    setRecordedChunks([]); // reset any old recordings
+    setRecordedChunks([]);
     setRecordingState("recording");
 
     recorder.ondataavailable = (event) => {
@@ -92,7 +86,6 @@ const QuestionDetail = () => {
     recorder.start();
   };
 
-  // Pause/Resume recording
   const handlePauseResume = () => {
     if (!mediaRecorder) return;
 
@@ -105,26 +98,70 @@ const QuestionDetail = () => {
     }
   };
 
-  // Finish recording and stop the camera stream
   const handleFinish = () => {
     if (!mediaRecorder) return;
 
     mediaRecorder.stop();
     setRecordingState("finished");
 
-    // Stop the camera stream immediately
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => {
+        track.stop();
+      });
+      streamRef.current = null;
+      setStream(null);
+    }
+  };
+
+  const handleRecordAgain = () => {
+    setRecordedChunks([]);
+    setRecordingState("idle");
+
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
     }
+
+    const initStream = async () => {
+      try {
+        const userStream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: true,
+        });
+        streamRef.current = userStream;
+        setStream(userStream);
+
+        if (videoRef.current) {
+          videoRef.current.srcObject = userStream;
+        }
+      } catch (error) {
+        console.error("Error accessing camera or microphone", error);
+      }
+    };
+
+    initStream();
   };
 
-  // (Optional) Allow user to record again after finishing
-  const handleRecordAgain = () => {
-    setRecordedChunks([]);
-    setRecordingState("idle");
-    // Reinitialize the camera stream if needed
-    // For example, you could trigger a reload of the component or call initStream() again.
+  const handleGrade = async () => {
+    if (recordedChunks.length === 0) return;
+
+    const blob = new Blob(recordedChunks, { type: "video/webm" });
+    const formData = new FormData();
+    formData.append("video", blob);
+    formData.append("question", question);
+
+    try {
+      const response = await fetch("http://127.0.0.1:5000/grade", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await response.json();
+      alert(`Grade received: ${data.grade}`);
+    } catch (error) {
+      console.error("Error submitting video for grading", error);
+      alert("Failed to submit video for grading.");
+    }
   };
 
   return (
@@ -132,14 +169,22 @@ const QuestionDetail = () => {
       <h2 className="question-heading">{question}</h2>
 
       <div className="video-container">
-        {/* Live camera feed */}
-        <video ref={videoRef} autoPlay muted className="camera-preview" />
+        {recordingState !== "finished" ? (
+          <video ref={videoRef} autoPlay muted className="camera-preview" />
+        ) : (
+          recordedChunks.length > 0 && (
+            <video
+              ref={playbackRef}
+              controls
+              className="playback-preview"
+              src={URL.createObjectURL(new Blob(recordedChunks, { type: "video/webm" }))}
+            />
+          )
+        )}
       </div>
 
       <div className="controls-container">
-        {recordingState === "idle" && (
-          <button onClick={handleRecord}>Record</button>
-        )}
+        {recordingState === "idle" && <button onClick={handleRecord}>Record</button>}
 
         {recordingState === "recording" && (
           <>
@@ -159,6 +204,7 @@ const QuestionDetail = () => {
           <>
             <p>Recording finished.</p>
             <button onClick={handleRecordAgain}>Record again</button>
+            <button onClick={handleGrade}>Grade</button>
           </>
         )}
       </div>
