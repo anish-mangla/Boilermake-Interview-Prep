@@ -44,7 +44,7 @@
 
 /* Performance Table Container */
 .performance-table-container {
-    background: #3a2e44; /* Matching container */
+    background: #3a2e44; /* Match summary section */
     padding: 1.5rem;
     border-radius: 8px;
     width: 90%;
@@ -65,7 +65,7 @@
 .performance-table {
     width: 100%;
     border-collapse: collapse;
-    background-color: #635175; /* Dark Purple */
+    background-color: #3a2e44; /* Updated to match summary */
     border-radius: 8px;
     overflow: hidden;
 }
@@ -79,17 +79,17 @@
 }
 
 .performance-table th {
-    background-color: #7b6792; /* Soft Purple */
+    background-color: #3a2e44; /* Match the container */
     color: white;
     font-weight: bold;
 }
 
 .performance-table tr:nth-child(even) {
-    background-color: #5a4768;
+    background-color: #3a2e44;
 }
 
 .performance-table tr:hover {
-    background-color: #7b6792;
+    background-color: #5a4d6a;
 }
 
 /* Button Styling */
@@ -104,7 +104,7 @@ button {
 }
 
 button:hover {
-    background-color: #7b6792;
+    background-color: #2c2333;
 }
 
 /* Responsive Design */
