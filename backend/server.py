@@ -116,6 +116,29 @@ def get_ai_feedback(question, transcript):
         return {"error": "Failed to generate AI feedback"}
 
 
+# Function to generate questions using OpenAI's API 
+import openai
+import os
+
+def generate_questions(text):
+    client = openai.Client()  # Initialize the new client
+
+    prompt = f"Generate five interview questions based on this resume:\n{text}\n\nQuestions:"
+    
+    response = client.chat.completions.create(
+        model="gpt-4",
+        messages=[
+            {"role": "system", "content": "You are an AI that creates interview questions based on resumes."},
+            {"role": "user", "content": prompt}
+        ],
+        max_tokens=200
+    )
+
+    # Extract questions from response
+    questions = response.choices[0].message.content.strip().split("\n")
+    questions = [line for line in questions if line.strip() != ""]
+    return questions[:5]  # Ensure we only take the top 5
+
 # ✅ Fetch Resume and Extract Text
 @app.route("/resume", methods=["POST"])
 def get_resume():
@@ -190,6 +213,9 @@ def grade():
             capture_output=True,
             text=True
         )
+        print("Whisper command output:", result.stdout)
+        print("Whisper command error:", result.stderr)
+
         if result.returncode != 0:
             raise Exception(f"Whisper error: {result.stderr}")
 
