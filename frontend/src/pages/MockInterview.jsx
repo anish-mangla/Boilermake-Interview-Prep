@@ -1,43 +1,34 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import "./MockInterview.css";
-import { GlobalContext } from '../contexts/GlobalContext'; // Adjust path as needed
-import { useNavigate } from 'react-router-dom';
-
-
 
 const MockInterview = () => {
   const location = useLocation();
-  const { resume, user } = location.state || {};
-  const questions = resume.questions
+  const { resume } = location.state || {};
+  const questions = resume.questions;
+
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [timer, setTimer] = useState(240); // 4 minutes in seconds
+  const [timer, setTimer] = useState(240);
   const [recordingState, setRecordingState] = useState("idle");
-  const [recordedChunks, setRecordedChunks] = useState([]);
-  const [countdownInterval, setCountdownInterval] = useState(null);
-  const [feedbacks, setFeedbacks] = useState([]); // Stores feedback for each question
+  const [feedbacks, setFeedbacks] = useState([]);
+  const [gradingInProgress, setGradingInProgress] = useState(false);  // Track grading status
   const [showFeedback, setShowFeedback] = useState(false);
-  
+
   const videoRef = useRef(null);
   const playbackRef = useRef(null);
-  const [mediaRecorder, setMediaRecorder] = useState(null);
-  const streamRef = useRef(null); // Ref to store the stream
+  const mediaRecorderRef = useRef(null);
+  const streamRef = useRef(null);
+  const recordedChunksRef = useRef([]);
+  const countdownIntervalRef = useRef(null);
 
   useEffect(() => {
     const initStream = async () => {
-      if (!streamRef.current) {
-        try {
-          const userStream = await navigator.mediaDevices.getUserMedia({
-            video: true,
-            audio: true,
-          });
-          streamRef.current = userStream;
-          if (videoRef.current && !videoRef.current.srcObject) {
-            videoRef.current.srcObject = userStream;
-          }
-        } catch (error) {
-          console.error("Error accessing camera or microphone", error);
-        }
+      try {
+        const userStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        streamRef.current = userStream;
+        if (videoRef.current) videoRef.current.srcObject = userStream;
+      } catch (error) {
+        console.error("Error accessing camera or microphone", error);
       }
     };
 
@@ -45,8 +36,7 @@ const MockInterview = () => {
 
     return () => {
       if (streamRef.current) {
-        streamRef.current.getTracks().forEach((track) => track.stop());
-        streamRef.current = null;
+        streamRef.current.getTracks().forEach(track => track.stop());
       }
     };
   }, [currentQuestionIndex]);
@@ -54,82 +44,81 @@ const MockInterview = () => {
   const handleRecord = () => {
     if (!streamRef.current) return;
 
+    recordedChunksRef.current = []; // Reset previous chunks
     const recorder = new MediaRecorder(streamRef.current);
-    setMediaRecorder(recorder);
-    setRecordingState("recording");
-    setRecordedChunks([]);
+    mediaRecorderRef.current = recorder;
 
     recorder.ondataavailable = (event) => {
       if (event.data.size > 0) {
-        setRecordedChunks((prevChunks) => [...prevChunks, event.data]);
+        recordedChunksRef.current.push(event.data);
+      }
+    };
+
+    recorder.onstop = async () => {
+      console.log("Recording stopped, chunks:", recordedChunksRef.current);
+      if (recordedChunksRef.current.length > 0) {
+        const videoBlob = new Blob(recordedChunksRef.current, { type: "video/webm" });
+        const formData = new FormData();
+        formData.append("video", videoBlob);
+        formData.append("question", questions[currentQuestionIndex]);
+        formData.append("index", currentQuestionIndex);
+
+        try {
+          setGradingInProgress(true);  // Start grading
+          const response = await fetch("http://127.0.0.1:5000/grade", {
+            method: "POST",
+            body: formData,
+          });
+          const data = await response.json();
+          
+          setFeedbacks(prev => {
+            const updated = [...prev];
+            updated[currentQuestionIndex] = { question: questions[currentQuestionIndex], ...data };
+            return updated;
+          });
+          console.log(data)
+          console.log(feedbacks)
+        } catch (error) {
+          console.error("Error submitting video:", error);
+        } finally {
+          setGradingInProgress(false);  // Stop grading
+        }
       }
     };
 
     recorder.start();
+    setRecordingState("recording");
     setTimer(240);
-    const countdown = setInterval(() => {
-      setTimer((prevTime) => {
-        if (prevTime <= 0) {
-          clearInterval(countdown);
+    countdownIntervalRef.current = setInterval(() => {
+      setTimer(prev => {
+        if (prev <= 0) {
+          clearInterval(countdownIntervalRef.current);
           handleFinish();
           return 0;
         }
-        return prevTime - 1;
+        return prev - 1;
       });
     }, 1000);
-    setCountdownInterval(countdown);
   };
 
-  const handleFinish = async () => {
-    if (!mediaRecorder) return;
-    mediaRecorder.stop();
+  const handleFinish = () => {
+    if (!mediaRecorderRef.current) return;
 
-    if (recordedChunks.length > 0) {
-      const videoBlob = new Blob(recordedChunks, { type: "video/webm" });
-      const formData = new FormData();
-      formData.append("video", videoBlob);
-      formData.append("question", questions[currentQuestionIndex]);
-      formData.append("index", currentQuestionIndex);
-
-      try {
-        const response = await fetch("http://127.0.0.1:5000/grade", {
-          method: "POST",
-          body: formData,
-        });
-        const data = await response.json();
-        setFeedbacks((prevFeedbacks) => {
-          const newFeedbacks = [...prevFeedbacks];
-          newFeedbacks[currentQuestionIndex] = {
-            question: questions[currentQuestionIndex],
-            ...data,
-          };
-          return newFeedbacks;
-        });
-      } catch (error) {
-        console.error("Error submitting video for grading", error);
-        alert("Failed to submit video for grading.");
-      }
-    }
+    mediaRecorderRef.current.stop();
     setRecordingState("finished");
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop());
-      streamRef.current = null;
-    }
-    if (countdownInterval) {
-      clearInterval(countdownInterval);
-    }
+    clearInterval(countdownIntervalRef.current);
   };
 
-  const handleNext = async () => {
+  const handleNext = () => {
+    if (gradingInProgress) {
+      console.warn("Grading is still in progress, please wait...");
+      return;
+    }
+    console.log(feedbacks)
     if (currentQuestionIndex < questions.length - 1) {
-      setCurrentQuestionIndex((prev) => prev + 1);
+      setCurrentQuestionIndex(prev => prev + 1);
       setRecordingState("idle");
-      setRecordedChunks([]);
       setTimer(240);
-      if (countdownInterval) {
-        clearInterval(countdownInterval);
-        setCountdownInterval(null);
-      }
     }
   };
 
@@ -139,20 +128,18 @@ const MockInterview = () => {
 
   return (
     <div className="question-detail-container">
-      <h2 className="question-heading">
-        Question {currentQuestionIndex + 1}: {questions[currentQuestionIndex]}
-      </h2>
+      <h2>Question {currentQuestionIndex + 1}: {questions[currentQuestionIndex]}</h2>
 
       <div className="video-container">
         {recordingState !== "finished" ? (
           <video ref={videoRef} autoPlay muted className="camera-preview" />
         ) : (
-          recordedChunks.length > 0 && (
+          recordedChunksRef.current.length > 0 && (
             <video
               ref={playbackRef}
               controls
               className="playback-preview"
-              src={URL.createObjectURL(new Blob(recordedChunks, { type: "video/webm" }))}
+              src={URL.createObjectURL(new Blob(recordedChunksRef.current, { type: "video/webm" }))}
             />
           )
         )}
@@ -167,21 +154,22 @@ const MockInterview = () => {
           </>
         )}
         {recordingState === "finished" && currentQuestionIndex < questions.length - 1 && (
-          <button onClick={handleNext}>Next Question</button>
+          <button onClick={handleNext} disabled={gradingInProgress}>Next Question</button>
         )}
         {recordingState === "finished" && currentQuestionIndex === questions.length - 1 && (
           <button onClick={handleSubmitFeedback}>Submit Grade</button>
         )}
       </div>
 
-      {showFeedback && (
+      {showFeedback && feedbacks.length > 0 && (
         <div className="feedback-container">
           <h3>Interview Feedback</h3>
+          {console.log(feedbacks)}
           {feedbacks.map((feedback, index) => (
-            <div key={index} className="feedback-item">
+            <div key={index}>
               <h4>Question {index + 1}: {feedback.question}</h4>
-              {feedback.grade && <p>Grade: {feedback.grade}</p>}
-              {feedback.transcript && <div><h5>Transcript:</h5><p>{feedback.transcript}</p></div>}
+              {feedback.feedback && <p>Grade: {feedback.feedback}</p>}
+              {feedback.transcript && <p>Transcript: {feedback.transcript}</p>}
             </div>
           ))}
         </div>
