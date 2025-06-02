@@ -1,20 +1,38 @@
-# Ignore .env file containing sensitive data (like API keys)
+# OS junk
+.DS_Store
+
+# Environment files
 .env
-/backend/.env
+backend/.env
+frontend/.env
 
-# Ignore the virtual environment directory (for Python projects)
-venv/
+# Git itself
+.git
 
-# Ignore IDE/editor specific files
-.vscode/
-.idea/
+# Video and text output files
+*.webm
+*.txt
 
-# Ignore Python bytecode files
+# Uploads and temp files
+backend/uploads/
+backend/temp.py
+ai_models/temp
+
+# Python cache
 __pycache__/
 *.pyc
 
-# Ignore log files
+# Node.js dependencies
+node_modules/
+frontend/node_modules/
+
+# Logs
 *.log
 
-# Ignore macOS system files
-.DS_Store
+# Docker build files (optional)
+*.Dockerfile
+
+# IDE/editor configs
+.vscode/
+.idea/
+*.swp
